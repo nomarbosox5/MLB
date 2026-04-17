@@ -3,46 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pitch Challenge: 60s Pro</title>
+    <title>MLB Pitch Sync</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
-        #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
-        
-        /* Video Player Area */
-        #video-container { width: 100%; height: 50vh; background: #000; position: relative; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Game Interface */
-        #game-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 40px; padding: 20px; }
-        #statcast-box { width: 150px; height: 210px; border: 4px solid rgba(255,255,255,0.8); position: relative; background: rgba(255,255,255,0.1); border-radius: 4px; }
-        
-        /* Feedback Text */
-        #results-panel { width: 120px; text-align: center; }
-        #outcome { font-size: 1.8rem; font-weight: 900; display: block; margin-bottom: 5px; color: #555; }
-        #detail { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* Dots */
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
+        #app { display: flex; flex-direction: column; height: 100vh; }
+        #video-container { width: 100%; height: 50vh; background: #111; position: relative; }
+        video { width: 100%; height: 100%; background: #000; }
+        #game-ui { flex-grow: 1; display: flex; align-items: center; justify-content: space-around; padding: 20px; }
+        #statcast-box { width: 150px; height: 210px; border: 4px solid #fff; position: relative; background: rgba(255,255,255,0.1); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #actual-pitch { width: 24px; height: 24px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 5; transition: opacity 0.1s; }
-        #user-swing { width: 34px; height: 34px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
-        
-        /* Interactive Surface */
-        #tap-area { position: absolute; inset: -40px; z-index: 10; cursor: crosshair; }
+        #actual-pitch { width: 22px; height: 22px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
+        #user-swing { width: 32px; height: 32px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
+        #tap-area { position: absolute; inset: -40px; z-index: 10; }
+        #outcome { font-size: 2rem; font-weight: 900; color: #555; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="video-container">
-        <video id="v" playsinline muted autoplay loop src="https://drive.google.com/uc?export=download&id=1GVRqPsufYw7rNNA7nJ6cTN6onmsJHNGM"></video>
+        <video id="v" playsinline muted autoplay loop 
+               src="https://drive.google.com/uc?export=download&id=1GVRqPsufYw7rNNA7nJ6cTN6onmsJHNGM">
+        </video>
     </div>
 
     <div id="game-ui">
-        <div id="results-panel">
-            <span id="outcome">READY</span>
-            <span id="detail">Tap the Box</span>
-        </div>
-
+        <h2 id="outcome">READY</h2>
         <div id="statcast-box">
             <div id="tap-area"></div>
             <div id="actual-pitch" class="dot"></div>
@@ -53,20 +39,11 @@
 
 <script>
     const v = document.getElementById('v');
-    const outcome = document.getElementById('outcome');
-    const actual = document.getElementById('actual-pitch');
-    const swing = document.getElementById('user-swing');
-
-    // YOUR 8 CALIBRATED PITCHES (X: 0-150, Y: 0-210)
     const pitches = [
-        { t: 0.92,  x: 75,  y: 45 },  // Pitch 1
-        { t: 6.40,  x: 70,  y: 95 },  // Pitch 2
-        { t: 10.86, x: 70,  y: 100 }, // Pitch 3
-        { t: 16.08, x: 110, y: 150 }, // Pitch 4
-        { t: 21.50, x: 120, y: 30 },  // Pitch 5
-        { t: 28.03, x: 145, y: 90 },  // Pitch 6
-        { t: 36.17, x: 35,  y: 160 }, // Pitch 7
-        { t: 44.20, x: 115, y: 170 }  // Pitch 8
+        { t: 0.92,  x: 75,  y: 45 }, { t: 6.40,  x: 70,  y: 95 },
+        { t: 10.86, x: 70,  y: 100 }, { t: 16.08, x: 110, y: 150 },
+        { t: 21.50, x: 120, y: 30 }, { t: 28.03, x: 145, y: 90 },
+        { t: 36.17, x: 35,  y: 160 }, { t: 44.20, x: 115, y: 170 }
     ];
 
     document.getElementById('tap-area').addEventListener('touchstart', (e) => {
@@ -75,40 +52,30 @@
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
 
-        // Show where you tapped
-        swing.style.left = ux + 'px';
-        swing.style.top = uy + 'px';
+        const swing = document.getElementById('user-swing');
+        swing.style.left = ux + 'px'; swing.style.top = uy + 'px';
         swing.style.display = 'block';
 
-        // Find the pitch closest to current video time
-        const now = v.currentTime;
         const match = pitches.reduce((prev, curr) => 
-            Math.abs(curr.t - now) < Math.abs(prev.t - now) ? curr : prev
+            Math.abs(curr.t - v.currentTime) < Math.abs(prev.t - v.currentTime) ? curr : prev
         );
 
-        // Calculate accuracy (only if within 1.5 seconds of the pitch)
-        if (Math.abs(match.t - now) < 1.5) {
+        if (Math.abs(match.t - v.currentTime) < 1.0) {
+            const actual = document.getElementById('actual-pitch');
             actual.style.left = match.x + 'px';
             actual.style.top = match.y + 'px';
             actual.style.opacity = "1";
-
-            const dist = Math.sqrt((ux - match.x)**2 + (uy - match.y)**2);
             
-            if (dist < 25) {
-                outcome.innerText = "CRUSHED"; outcome.style.color = "#00ffcc";
-            } else if (dist < 50) {
-                outcome.innerText = "HIT"; outcome.style.color = "#fff";
-            } else {
-                outcome.innerText = "MISS"; outcome.style.color = "#ff4d4d";
-            }
+            const dist = Math.sqrt((ux - match.x)**2 + (uy - match.y)**2);
+            document.getElementById('outcome').innerText = dist < 25 ? "BOOM" : "MISS";
+            document.getElementById('outcome').style.color = dist < 25 ? "#00ffcc" : "#ff4d4d";
         }
 
-        // Reset for next pitch
         setTimeout(() => {
-            actual.style.opacity = "0";
+            document.getElementById('actual-pitch').style.opacity = "0";
             swing.style.display = "none";
-            outcome.innerText = "READY";
-            outcome.style.color = "#555";
+            document.getElementById('outcome').innerText = "READY";
+            document.getElementById('outcome').style.color = "#555";
         }, 2000);
     });
 </script>
