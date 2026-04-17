@@ -3,32 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pitch Sync</title>
+    <title>MLB Pitch Sync Pro</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        #app { display: flex; flex-direction: column; height: 100vh; }
-        #video-container { width: 100%; height: 50vh; background: #111; position: relative; }
-        video { width: 100%; height: 100%; background: #000; }
-        #game-ui { flex-grow: 1; display: flex; align-items: center; justify-content: space-around; padding: 20px; }
-        #statcast-box { width: 150px; height: 210px; border: 4px solid #fff; position: relative; background: rgba(255,255,255,0.1); }
+        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
+        #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        
+        /* Video Player Area */
+        #video-container { width: 100%; height: 50vh; background: #111; position: relative; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+        /* Game Interface */
+        #game-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 30px; padding: 20px; background: #0a0a0a; }
+        #statcast-box { width: 150px; height: 210px; border: 3px solid rgba(255,255,255,0.8); position: relative; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        
+        /* Feedback Panel */
+        #results-panel { width: 100px; text-align: center; }
+        #outcome { font-size: 1.5rem; font-weight: 900; display: block; color: #444; margin-bottom: 5px; }
+        #detail { font-size: 0.6rem; color: #666; text-transform: uppercase; }
+
+        /* Dots */
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #actual-pitch { width: 22px; height: 22px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
-        #user-swing { width: 32px; height: 32px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
-        #tap-area { position: absolute; inset: -40px; z-index: 10; }
-        #outcome { font-size: 2rem; font-weight: 900; color: #555; }
+        #actual-pitch { width: 20px; height: 20px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 5; }
+        #user-swing { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
+        
+        /* Hit Area */
+        #tap-area { position: absolute; inset: -30px; z-index: 10; cursor: crosshair; }
+        
+        /* Loading Message */
+        #loading-text { position: absolute; color: #444; font-size: 12px; z-index: 1; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div id="video-container">
-        <video id="v" playsinline muted autoplay loop 
-               src="https://drive.google.com/uc?export=download&id=1GVRqPsufYw7rNNA7nJ6cTN6onmsJHNGM">
-        </video>
+        <div id="loading-text">Loading Video...</div>
+        <video id="v" playsinline muted autoplay loop src="https://drive.google.com/uc?export=download&id=1GVRqPsufYw7rNNA7nJ6cTN6onmsJHNGM"></video>
     </div>
 
     <div id="game-ui">
-        <h2 id="outcome">READY</h2>
+        <div id="results-panel">
+            <span id="outcome">READY</span>
+            <span id="detail">Tap Box</span>
+        </div>
+
         <div id="statcast-box">
             <div id="tap-area"></div>
             <div id="actual-pitch" class="dot"></div>
@@ -39,45 +57,66 @@
 
 <script>
     const v = document.getElementById('v');
+    const outcome = document.getElementById('outcome');
+    const actual = document.getElementById('actual-pitch');
+    const swing = document.getElementById('user-swing');
+
+    // YOUR 8 COORDINATES FROM THE SCREENSHOTS
     const pitches = [
-        { t: 0.92,  x: 75,  y: 45 }, { t: 6.40,  x: 70,  y: 95 },
-        { t: 10.86, x: 70,  y: 100 }, { t: 16.08, x: 110, y: 150 },
-        { t: 21.50, x: 120, y: 30 }, { t: 28.03, x: 145, y: 90 },
-        { t: 36.17, x: 35,  y: 160 }, { t: 44.20, x: 115, y: 170 }
+        { t: 0.92,  x: 75,  y: 45 },  
+        { t: 6.40,  x: 70,  y: 95 },  
+        { t: 10.86, x: 70,  y: 100 }, 
+        { t: 16.08, x: 110, y: 150 }, 
+        { t: 21.50, x: 120, y: 30 },  
+        { t: 28.03, x: 145, y: 90 },  
+        { t: 36.17, x: 35,  y: 160 }, 
+        { t: 44.20, x: 115, y: 170 }  
     ];
 
+    // Interaction Logic
     document.getElementById('tap-area').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const rect = document.getElementById('statcast-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
 
-        const swing = document.getElementById('user-swing');
-        swing.style.left = ux + 'px'; swing.style.top = uy + 'px';
+        swing.style.left = ux + 'px';
+        swing.style.top = uy + 'px';
         swing.style.display = 'block';
 
+        const now = v.currentTime;
         const match = pitches.reduce((prev, curr) => 
-            Math.abs(curr.t - v.currentTime) < Math.abs(prev.t - v.currentTime) ? curr : prev
+            Math.abs(curr.t - now) < Math.abs(prev.t - now) ? curr : prev
         );
 
-        if (Math.abs(match.t - v.currentTime) < 1.0) {
-            const actual = document.getElementById('actual-pitch');
+        if (Math.abs(match.t - now) < 1.2) {
             actual.style.left = match.x + 'px';
             actual.style.top = match.y + 'px';
             actual.style.opacity = "1";
-            
+
             const dist = Math.sqrt((ux - match.x)**2 + (uy - match.y)**2);
-            document.getElementById('outcome').innerText = dist < 25 ? "BOOM" : "MISS";
-            document.getElementById('outcome').style.color = dist < 25 ? "#00ffcc" : "#ff4d4d";
+            
+            if (dist < 22) {
+                outcome.innerText = "CRUSHED"; outcome.style.color = "#00ffcc";
+            } else if (dist < 45) {
+                outcome.innerText = "HIT"; outcome.style.color = "#fff";
+            } else {
+                outcome.innerText = "MISS"; outcome.style.color = "#ff4d4d";
+            }
         }
 
         setTimeout(() => {
-            document.getElementById('actual-pitch').style.opacity = "0";
+            actual.style.opacity = "0";
             swing.style.display = "none";
-            document.getElementById('outcome').innerText = "READY";
-            document.getElementById('outcome').style.color = "#555";
-        }, 2000);
+            outcome.innerText = "READY";
+            outcome.style.color = "#444";
+        }, 1500);
     });
+
+    // Video Fix: Try to force play on mobile tap
+    document.body.addEventListener('click', () => {
+        if (v.paused) v.play();
+    }, { once: true });
 </script>
 </body>
 </html>
