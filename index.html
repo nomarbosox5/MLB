@@ -8,17 +8,18 @@
         :root { --gold: #f1c40f; --blue: #3498db; --bg: #050505; --grass: #1b3318; --board: #111; --wood: #8b5a2b; }
         body { margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; height: 100svh; display: flex; flex-direction: column; }
         
-        #banner { height: 3.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--gold); border-bottom: 1px solid #222; z-index: 10; }
+        #banner { height: 3.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--gold); border-bottom: 1px solid #222; }
         
         #v-frame { width: 100%; height: 63vh; overflow: hidden; position: relative; background: #000; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
-        #deck { height: 33.5vh; display: grid; grid-template-columns: 1.1fr 0.9fr; background: #080808; padding: 4px 8px; gap: 6px; padding-bottom: env(safe-area-inset-bottom); }
-        .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; }
+        /* PRECISE 0.5 RATIO SHIFT (0.95 to 1.05) */
+        #deck { height: 33.5vh; display: grid; grid-template-columns: 0.95fr 1.05fr; background: #050505; padding: 4px 8px; gap: 8px; padding-bottom: env(safe-area-inset-bottom); }
+        .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; position: relative; }
 
         #scoreboard-strip { width: 100%; height: 5vh; background: var(--board); border: 1px solid #333; border-radius: 4px; display: flex; align-items: center; justify-content: space-around; padding: 0 5px; }
         .stat-unit { display: flex; flex-direction: column; align-items: center; }
-        .stat-label { font-size: 7px; color: #666; font-weight: 800; line-height: 1; }
+        .stat-label { font-size: 7px; color: #666; font-weight: 800; }
         .dots { display: flex; gap: 2px; margin-top: 2px; }
         .dot { width: 6px; height: 6px; border-radius: 50%; background: #222; border: 1px solid #333; }
         .b-on { background: var(--blue); box-shadow: 0 0 5px var(--blue); } 
@@ -30,20 +31,23 @@
         #mb-1 { top: 0; right: 0; } #mb-2 { top: 0; left: 0; } #mb-3 { bottom: 0; left: 0; }
         .m-on { background: var(--gold); border-color: #fff; }
 
-        #field-container { width: 100%; flex-grow: 1; background: var(--bg); position: relative; overflow: hidden; margin-top: 4px; border-radius: 4px; border: 1px solid #222; }
+        #field-container { width: 100%; flex-grow: 1; background: #000; position: relative; overflow: hidden; margin-top: 4px; border-radius: 4px; border: 1px solid #222; }
         .field-svg { width: 100%; height: 100%; }
         
-        .hit-dot { position: absolute; width: 14px; height: 14px; background: rgba(0,0,0,0.9); border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 6px; font-weight: 900; transform: translate(-50%, -50%); }
+        .hit-dot { position: absolute; width: 16px; height: 16px; background: rgba(0,0,0,0.9); border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 900; transform: translate(-50%, -50%); }
 
-        #result-card { width: 100%; height: 5vh; background: var(--board); border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #res-main { color: var(--gold); font-size: 14px; font-weight: 900; min-height: 1.2em; text-transform: uppercase; }
+        #result-card { width: 100%; height: 5vh; background: var(--board); border: 1px solid #444; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        #res-main { color: var(--gold); font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        #strike-zone-box { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        #strike-zone { width: 120px; height: 155px; border: 2.5px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.03); position: relative; touch-action: none; border-radius: 4px; }
+        #swing-zone { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; touch-action: none; background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 4px; margin-top: 4px; }
         
-        .ball-asset { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 8px #fff; }
-        .bat-asset { position: absolute; width: 25px; height: 25px; background: var(--wood); border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1.5px solid #000; }
-        .pitch-dot { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.8; z-index: 1; }
+        /* STRIKE ZONE (120x155) */
+        #strike-zone { width: 120px; height: 155px; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.03); position: relative; pointer-events: none; border-radius: 2px; }
+        
+        /* UPDATED ASSET SIZES */
+        .ball-asset { position: absolute; width: 26px; height: 26px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 12px #fff; }
+        .bat-asset { position: absolute; width: 35px; height: 35px; background: var(--wood); border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 2px solid #000; }
+        .pitch-dot { position: absolute; width: 26px; height: 26px; background: rgba(255,255,255,0.3); border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 1; }
     </style>
 </head>
 <body>
@@ -67,20 +71,20 @@
         <div id="field-container">
             <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
                 <path d="M50 98 L5 48 A 65 65 0 0 1 95 48 L50 98" fill="var(--grass)" />
-                <line x1="50" y1="98" x2="5" y2="48" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
-                <line x1="50" y1="98" x2="95" y2="48" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
+                <line x1="50" y1="98" x2="5" y2="48" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+                <line x1="50" y1="98" x2="95" y2="48" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
             </svg>
         </div>
     </div>
 
     <div class="panel">
         <div id="result-card"><div id="res-main"></div></div>
-        <div id="strike-zone-box">
+        <div id="swing-zone">
             <div id="strike-zone">
-                <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
-                <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
-                <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
-                <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
+                <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.15);"></div>
+                <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.15);"></div>
+                <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.15);"></div>
+                <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.15);"></div>
             </div>
         </div>
     </div>
@@ -88,6 +92,7 @@
 
 <script>
     const v = document.getElementById('v');
+    const swz = document.getElementById('swing-zone');
     const sz = document.getElementById('strike-zone');
     const fSvg = document.getElementById('field-svg');
 
@@ -100,14 +105,14 @@
 
     let g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
 
-    sz.addEventListener('touchstart', (e) => {
+    swz.addEventListener('touchstart', (e) => {
         e.preventDefault();
         const now = v.currentTime;
         const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.85);
         if(g.processed || pIdx === -1) return; 
         
         g.processed = true; g.lastIdx = pIdx;
-        const rect = sz.getBoundingClientRect();
+        const rect = sz.getBoundingClientRect(); 
         const tx = e.touches[0].clientX - rect.left;
         const ty = e.touches[0].clientY - rect.top;
 
@@ -123,22 +128,19 @@
         const ball = document.createElement('div'); ball.className='ball-asset';
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
-        if(dist < 25) {
+        if(dist < 35) {
             const la = ((ty - py) / 20) * 45; 
             const ang = ((px - tx) * 2.5); 
             const ev = 110 - (dist * 2.2) - (Math.abs(tDiff) * 350);
             const ft = (ev * 4.3) * (Math.cos(la * Math.PI / 180));
             handleHit(ft, ang, la);
-        } else { 
-            addStrike("SWINGING"); 
-        }
+        } else { addStrike("SWINGING"); }
         updateUI();
     });
 
     function handleHit(ft, angle, la) {
         let res = "OUT"; let move = 0; let tag = "OUT";
         if(Math.abs(angle) > 52) { addStrike("FOUL"); return; } 
-
         if (ft < 110) { res = la < 0 ? "GROUND OUT" : "POP OUT"; tag = "OUT"; }
         else if (ft < 225) { res = "SINGLE"; move = 1; tag = "1B"; }
         else if (ft < 325) { res = "DOUBLE"; move = 2; tag = "2B"; }
@@ -148,24 +150,18 @@
             else { res = "TRIPLE"; move = 3; tag = "3B"; }
         }
         document.getElementById('res-main').innerText = res;
-        
-        const fieldRange = 50; 
-        const distScaled = (ft / 400) * fieldRange;
-        const endY = 98 - distScaled;
-        const endX = 50 + (angle * (distScaled / fieldRange));
-
+        const fieldRange = 50; const distScaled = (ft / 400) * fieldRange;
+        const endY = 98 - distScaled; const endX = 50 + (angle * (distScaled / fieldRange));
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", "50"); line.setAttribute("y1", "98");
         line.setAttribute("x2", endX); line.setAttribute("y2", endY);
         line.setAttribute("stroke", move > 0 ? "var(--gold)" : "#555");
         line.setAttribute("stroke-width", "1.5");
         fSvg.appendChild(line);
-
         const dot = document.createElement('div');
         dot.className = 'hit-dot'; dot.innerText = tag;
         dot.style.left = endX + "%"; dot.style.top = endY + "%";
         document.getElementById('field-container').appendChild(dot);
-
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
         else { g.o++; g.b = 0; g.s = 0; checkState(); }
     }
@@ -180,19 +176,10 @@
     }
 
     function addStrike(reason) {
-        if (reason === "FOUL") { 
-            // RULE: Foul is a strike unless you already have 2 strikes
-            if (g.s < 2) g.s++; 
-            document.getElementById('res-main').innerText = "FOUL"; 
-        } else {
-            g.s++; 
-            if(g.s >= 3) { 
-                g.s = 0; g.b = 0; g.o++; 
-                document.getElementById('res-main').innerText = "STRIKE THREE"; 
-                checkState(); 
-            } else { 
-                document.getElementById('res-main').innerText = "STRIKE"; 
-            }
+        if (reason === "FOUL") { if (g.s < 2) g.s++; document.getElementById('res-main').innerText = "FOUL"; } 
+        else {
+            g.s++; if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; document.getElementById('res-main').innerText = "STRIKE THREE"; checkState(); }
+            else { document.getElementById('res-main').innerText = "STRIKE"; }
         }
     }
 
@@ -223,14 +210,11 @@
 
     setInterval(() => {
         const now = v.currentTime;
-        
-        // PRE-PITCH RESET: Clear zone 0.8s before pitch arrival
         const upcomingIdx = pitches.findIndex(p => p.t - now < 0.85 && p.t - now > 0.75);
         if(upcomingIdx !== -1) {
             sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
             document.getElementById('res-main').innerText = ""; 
         }
-
         const autoIdx = pitches.findIndex(p => now > p.t + 0.8 && g.lastIdx < pitches.indexOf(p));
         if(autoIdx !== -1) {
             const p = pitches[autoIdx];
@@ -242,7 +226,6 @@
             if(p.strike) addStrike("TAKEN"); else addBall();
             updateUI();
         }
-
         if (now < 0.2 && g.lastIdx !== -1) {
             g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
             fSvg.querySelectorAll('line').forEach(el => el.remove());
