@@ -2,103 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baseball Statcast Interface</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Baseball Statcast Mobile</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Arial', sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
-        /* Grid Layout matching your screenshot */
-        #main-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 60vh 40vh;
-            width: 100vw; height: 100vh;
-        }
-
-        /* Top Section: Full Width Video */
-        #video-section {
-            grid-column: 1 / span 2;
-            position: relative;
-            border-bottom: 2px solid #333;
+        /* Video stays at the top with a locked aspect ratio */
+        #video-container {
+            width: 100%;
             background: #111;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            flex-shrink: 0;
         }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Bottom Left: Score and Feedback */
-        #feedback-section {
-            background: #050505;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            border-right: 1px solid #333;
+        /* Bottom Section: Controls & Grid */
+        #gameplay-area {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #0a0a0a;
+            border-top: 2px solid #333;
         }
 
-        /* Bottom Right: Strike Zone Interaction */
-        #interaction-section {
-            background: #0a0a0a;
+        #ui-left {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-right: 1px solid #222;
+        }
+
+        #ui-right {
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
+            background: #000;
         }
 
-        /* UI Elements */
-        .scoreboard { background: #1a1a1a; padding: 10px; width: fit-content; border: 1px solid #444; }
-        .dots { display: flex; gap: 5px; margin: 5px 0; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; border: 1px solid #555; }
-        .active-s { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; }
+        /* Scoreboard & Feedback */
+        .scoreboard { background: #1a1a1a; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        .dots { display: flex; gap: 6px; margin: 4px 0; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: #333; }
         .active-b { background: #3498db; }
+        .active-s { background: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
         .active-o { background: #e74c3c; }
 
-        .swing-card { background: #222; border-left: 4px solid #f1c40f; padding: 10px; width: 220px; }
-        .label { font-size: 10px; color: #aaa; letter-spacing: 1px; }
-        .value { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-
-        /* Strike Zone Styling */
-        #strike-zone {
-            width: 180px; height: 240px;
-            border: 2px solid rgba(255,255,255,0.4);
-            position: relative;
-            background: rgba(255,255,255,0.05);
+        .swing-feedback { 
+            background: rgba(255,255,255,0.05); 
+            border-left: 4px solid #f1c40f; 
+            padding: 10px; 
+            transition: opacity 0.2s;
         }
-        .grid-v { position: absolute; width: 33.33%; height: 100%; border-right: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
-        .grid-h { position: absolute; height: 33.33%; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
+        .label { font-size: 10px; color: #888; text-transform: uppercase; }
+        .value { font-size: 16px; margin-bottom: 4px; font-weight: 800; }
 
-        .ball-marker { position: absolute; width: 15px; height: 15px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; }
-        .bat-marker { position: absolute; width: 8px; height: 40px; background: #8d6e63; transform: translate(-50%, -50%) rotate(45deg); z-index: 6; }
+        /* The Grid - Scaled for Mobile */
+        #strike-zone {
+            width: 150px;
+            height: 200px;
+            border: 2px solid rgba(255,255,255,0.5);
+            position: relative;
+            background: rgba(255,255,255,0.03);
+            touch-action: none;
+        }
+        .grid-line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
+        
+        .ball-hit { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; border: 2px solid #000; }
+        .bat-tap { position: absolute; width: 8px; height: 40px; background: #8d6e63; transform: translate(-50%, -50%) rotate(45deg); z-index: 11; border: 1px solid #000; }
     </style>
 </head>
 <body>
 
-<div id="main-container">
-    <div id="video-section">
-        <video id="v" autoplay muted loop playsinline>
-            <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-        </video>
-    </div>
+<div id="video-container">
+    <video id="v" autoplay muted loop playsinline preload="auto">
+        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+    </video>
+</div>
 
-    <div id="feedback-section">
+<div id="gameplay-area">
+    <div id="ui-left">
         <div class="scoreboard">
             <div>B <div class="dots" id="b-row"></div></div>
             <div>S <div class="dots" id="s-row"></div></div>
             <div>O <div class="dots" id="o-row"></div></div>
         </div>
         
-        <div class="swing-card" id="card" style="opacity: 0;">
-            <div class="label">SWING TIMING</div>
-            <div id="v-timing" class="value">GOOD</div>
-            <div class="label">CONTACT RESULT</div>
-            <div id="v-contact" class="value">SQUARED UP</div>
-            <div class="label">HIT SPEED</div>
-            <div id="v-speed" class="value" style="color:#f1c40f">103 MPH</div>
+        <div class="swing-feedback" id="feedback" style="opacity:0">
+            <div class="label">Result</div>
+            <div id="res-contact" class="value">---</div>
+            <div class="label">Exit Velo</div>
+            <div id="res-speed" class="value" style="color:#f1c40f">---</div>
         </div>
     </div>
 
-    <div id="interaction-section">
+    <div id="ui-right">
         <div id="strike-zone">
-            <div class="grid-v" style="left:0"></div><div class="grid-v" style="left:33%"></div>
-            <div class="grid-h" style="top:0"></div><div class="grid-h" style="top:33%"></div>
+            <div class="grid-line" style="width:1px; height:100%; left:33%"></div>
+            <div class="grid-line" style="width:1px; height:100%; left:66%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:33%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:66%"></div>
         </div>
     </div>
 </div>
@@ -106,7 +110,7 @@
 <script>
     const v = document.getElementById('v');
     const zone = document.getElementById('strike-zone');
-    const card = document.getElementById('card');
+    const fb = document.getElementById('feedback');
     
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -117,65 +121,69 @@
 
     let state = { b:0, s:0, o:0 };
 
-    function renderDots() {
-        const make = (id, count, max, cls) => {
+    function updateUI() {
+        const render = (id, count, max, cls) => {
             const el = document.getElementById(id); el.innerHTML = '';
             for(let i=0; i<max; i++) el.innerHTML += `<div class="dot ${i<count?cls:''}"></div>`;
-        }
-        make('b-row', state.b, 3, 'active-b');
-        make('s-row', state.s, 2, 'active-s');
-        make('o-row', state.o, 2, 'active-o');
+        };
+        render('b-row', state.b, 3, 'active-b');
+        render('s-row', state.s, 2, 'active-s');
+        render('o-row', state.o, 2, 'active-o');
     }
 
-    zone.addEventListener('click', (e) => {
+    zone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         const r = zone.getBoundingClientRect();
-        const tx = e.clientX - r.left;
-        const ty = e.clientY - r.top;
+        const touch = e.touches[0];
+        const tx = touch.clientX - r.left;
+        const ty = touch.clientY - r.top;
         
+        handleSwing(tx, ty);
+    }, {passive: false});
+
+    zone.addEventListener('mousedown', (e) => {
+        const r = zone.getBoundingClientRect();
+        handleSwing(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    function handleSwing(tx, ty) {
         const now = v.currentTime;
         const p = pitches.find(p => Math.abs(now - p.t) < 0.7);
 
-        // Visual bat
-        const b = document.createElement('div'); b.className = 'bat-marker';
-        b.style.left = tx+'px'; b.style.top = ty+'px'; zone.appendChild(b);
+        // Visual feedback
+        zone.querySelectorAll('.bat-tap, .ball-hit').forEach(m => m.remove());
+        const bat = document.createElement('div'); bat.className = 'bat-tap';
+        bat.style.left = tx+'px'; bat.style.top = ty+'px'; zone.appendChild(bat);
+
+        fb.style.opacity = 1;
 
         if(p) {
-            // Map p.x (-0.75 to 0.75) to 0 to 180px
-            const px = ((p.x + 0.75) / 1.5) * 180;
-            const py = ((1.0 - p.y) / 2.0) * 240;
+            const px = ((p.x + 0.75) / 1.5) * 150;
+            const py = ((1.0 - p.y) / 2.0) * 200;
 
-            const ball = document.createElement('div'); ball.className = 'ball-marker';
+            const ball = document.createElement('div'); ball.className = 'ball-hit';
             ball.style.left = px+'px'; ball.style.top = py+'px'; zone.appendChild(ball);
 
-            const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
-            const speed = Math.max(0, 75 + 30 - (d/2));
+            const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
+            const speed = Math.floor(Math.max(0, 105 - dist));
             
-            card.style.opacity = 1;
-            document.getElementById('v-speed').innerText = Math.floor(speed) + " MPH";
-            document.getElementById('v-contact').innerText = d < 30 ? "SQUARED UP" : "WEAK";
+            document.getElementById('res-speed').innerText = speed + " MPH";
+            document.getElementById('res-contact').innerText = dist < 25 ? "SQUARED UP" : "WEAK";
             
-            if(speed < 90) { state.s++; } else { state.s = 0; state.b = 0; }
+            if(speed < 85) state.s++; else { state.s = 0; state.b = 0; }
         } else {
+            document.getElementById('res-contact').innerText = "WHIFF";
+            document.getElementById('res-speed').innerText = "0 MPH";
             state.s++;
-            card.style.opacity = 1;
-            document.getElementById('v-contact').innerText = "WHIFF";
-            document.getElementById('v-speed').innerText = "0 MPH";
         }
 
         if(state.s >= 3) { state.s=0; state.o++; }
-        renderDots();
-    });
+        if(state.o >= 3) { state.o=0; }
+        updateUI();
+    }
 
-    // Auto-clear logic: 1 second before next pitch
     setInterval(() => {
         const next = pitches.find(p => p.t > v.currentTime && p.t - v.currentTime < 1.0);
         if(next) {
-            zone.querySelectorAll('.ball-marker, .bat-marker').forEach(m => m.remove());
-            card.style.opacity = 0;
-        }
-    }, 100);
-
-    renderDots();
-</script>
-</body>
-</html>
+            zone.querySelectorAll('.bat-tap, .ball-hit').forEach(m => m.remove());
+            fb.style.opacity = 0;
