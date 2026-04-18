@@ -2,113 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pitch Sync: Precision Fuel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Tracker MVP</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
-        #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
-        
-        #video-container { width: 100%; height: 50vh; background: #111; position: relative; }
-        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-
-        #game-ui { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 30px; padding: 20px; background: #0a0a0a; }
-        #statcast-box { width: 150px; height: 210px; border: 3px solid rgba(255,255,255,0.8); position: relative; background: rgba(255,255,255,0.05); border-radius: 4px; }
-        
-        #results-panel { width: 100px; text-align: center; }
-        #outcome { font-size: 1.5rem; font-weight: 900; display: block; color: #444; margin-bottom: 5px; }
-        #detail { font-size: 0.6rem; color: #666; text-transform: uppercase; }
-
-        .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #actual-pitch { width: 22px; height: 22px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 5; }
-        #user-swing { width: 32px; height: 32px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
-        
-        #tap-area { position: absolute; inset: -30px; z-index: 10; cursor: crosshair; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .zone-container { position: relative; width: 300px; height: 420px; border: 4px solid #555; margin-top: 20px; background: #222; }
+        /* The Strike Zone (Sections 1, 2, 4, 5) */
+        .strike-zone { position: absolute; top: 0; left: 0; width: 200px; height: 280px; border: 2px dashed rgba(255,255,255,0.3); background: rgba(0, 255, 0, 0.05); }
+        .pitch-dot { position: absolute; width: 12px; height: 12px; background: red; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid white; display: none; }
+        .stats { margin-top: 20px; padding: 15px; background: #333; border-radius: 8px; width: 300px; }
+        .ball { background: #ff4444 !important; }
+        .strike { background: #44ff44 !important; }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div id="video-container">
-        <video id="v" playsinline muted autoplay loop src="ScreenRecording_04-17-2026%2018-27-36_1.mp4"></video>
+    <h2>Pitch & Hit Projection</h2>
+    
+    <div class="zone-container" id="container">
+        <div class="strike-zone"></div>
+        <div id="dot" class="pitch-dot"></div>
     </div>
 
-    <div id="game-ui">
-        <div id="results-panel">
-            <span id="outcome">READY</span>
-            <span id="detail">Tap Strike Zone</span>
-        </div>
-
-        <div id="statcast-box">
-            <div id="tap-area"></div>
-            <div id="actual-pitch" class="dot"></div>
-            <div id="user-swing" class="dot"></div>
-        </div>
+    <div class="stats" id="output">
+        Select a pitch to see results...
     </div>
-</div>
 
-<script>
-    const v = document.getElementById('v');
-    const outcome = document.getElementById('outcome');
-    const actual = document.getElementById('actual-pitch');
-    const swing = document.getElementById('user-swing');
+    <div style="margin-top: 10px;">
+        <button onclick="playPitch(0)">P1</button>
+        <button onclick="playPitch(1)">P2</button>
+        <button onclick="playPitch(2)">P3</button>
+        <button onclick="playPitch(3)">P4</button>
+        <button onclick="playPitch(4)">P5</button>
+        <button onclick="playPitch(5)">P6</button>
+        <button onclick="playPitch(6)">P7</button>
+        <button onclick="playPitch(7)">P8</button>
+    </div>
 
-    // RECALIBRATED DATA: Adjusted for your 47s video
-    const pitches = [
-        { t: 0.95,  x: 75,  y: 90 },   // Pitch 1
-        { t: 6.45,  x: 55,  y: 110 },  // Pitch 2
-        { t: 10.90, x: 110, y: 140 }, // Pitch 3
-        { t: 16.15, x: 75,  y: 115 },  // Pitch 4
-        { t: 21.60, x: 45,  y: 145 },  // Pitch 5
-        { t: 28.10, x: 80,  y: 50 },   // Pitch 6
-        { t: 36.25, x: 105, y: 155 }, // Pitch 7
-        { t: 44.30, x: 75,  y: 100 }   // Pitch 8
-    ];
+    <script>
+        // Scaling: coordinates translated to 150x210 grid (doubled to 300x420 for visibility)
+        const pitches = [
+            { id: 1, x: 25,  y: 35,  type: "STRIKE", physics: { ang: 12, len: 285, desc: "Line Drive (LF)" } },
+            { id: 2, x: 65,  y: 15,  type: "STRIKE", physics: { ang: 25, len: 340, desc: "Deep Fly (CF)" } },
+            { id: 3, x: 85,  y: 85,  type: "STRIKE", physics: { ang: -5, len: 110, desc: "Grounder (SS)" } },
+            { id: 4, x: 105, y: 95,  type: "STRIKE", physics: { ang: 45, len: 150, desc: "Infield Pop" } },
+            { id: 5, x: 110, y: 85,  type: "STRIKE", physics: { ang: 2,  len: 140, desc: "Hard Grounder" } },
+            { id: 6, x: 15,  y: 165, type: "BALL",   physics: { ang: -15, len: 10,  desc: "Tipped Foul" } },
+            { id: 7, x: 25,  y: 50,  type: "STRIKE", physics: { ang: 18, len: 310, desc: "Gapper (LC)" } },
+            { id: 8, x: 15,  y: 130, type: "BALL",   physics: { ang: 0,   len: 0,   desc: "Whiff" } }
+        ];
 
-    document.getElementById('tap-area').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const rect = document.getElementById('statcast-box').getBoundingClientRect();
-        const ux = e.touches[0].clientX - rect.left;
-        const uy = e.touches[0].clientY - rect.top;
+        function playPitch(index) {
+            const p = pitches[index];
+            const dot = document.getElementById('dot');
+            const out = document.getElementById('output');
 
-        swing.style.left = ux + 'px';
-        swing.style.top = uy + 'px';
-        swing.style.display = 'block';
+            // Map to visual scale (x2)
+            dot.style.left = (p.x * 2) + 'px';
+            dot.style.top = (p.y * 2) + 'px';
+            dot.style.display = 'block';
 
-        const now = v.currentTime;
-        // Find the pitch closest to the current time
-        const match = pitches.reduce((prev, curr) => 
-            Math.abs(curr.t - now) < Math.abs(prev.t - now) ? curr : prev
-        );
-
-        // Check if user tapped within 1 second of the pitch landing
-        if (Math.abs(match.t - now) < 1.0) {
-            actual.style.left = match.x + 'px';
-            actual.style.top = match.y + 'px';
-            actual.style.opacity = "1";
-
-            const dist = Math.sqrt((ux - match.x)**2 + (uy - match.y)**2);
-            
-            if (dist < 25) {
-                outcome.innerText = "CRUSHED"; outcome.style.color = "#00ffcc";
-            } else if (dist < 50) {
-                outcome.innerText = "HIT"; outcome.style.color = "#fff";
-            } else {
-                outcome.innerText = "MISS"; outcome.style.color = "#ff4d4d";
-            }
+            // Update UI
+            out.innerHTML = `
+                <strong>Pitch ${p.id}: <span class="${p.type.toLowerCase()}">${p.type}</span></strong><br>
+                Result: ${p.physics.desc}<br>
+                Distance: ${p.physics.len} ft<br>
+                Angle: ${p.physics.ang}°
+            `;
         }
-
-        setTimeout(() => {
-            actual.style.opacity = "0";
-            swing.style.display = "none";
-            outcome.innerText = "READY";
-            outcome.style.color = "#444";
-        }, 1200);
-    });
-
-    // Tap to wake up video on iOS
-    window.addEventListener('touchstart', () => {
-        if (v.paused) v.play();
-    }, { once: true });
-</script>
+    </script>
 </body>
 </html>
