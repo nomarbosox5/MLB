@@ -3,69 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pro - Physics Sync</title>
+    <title>MLB Pro - 0.7 Zone Statcast</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #video-section { width: 100%; background: #000; flex-shrink: 0; border-bottom: 2px solid #222; }
+        #v-sec { width: 100%; background: #000; flex-shrink: 0; border-bottom: 2px solid #333; }
         video { width: 100%; max-height: 42vh; display: block; }
 
-        #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: space-around; padding: 15px; }
-        #results-area { width: 180px; display: flex; flex-direction: column; gap: 4px; }
-        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
-        .stat-line { font-size: 0.85rem; font-family: monospace; color: #aaa; }
-        .stat-line span { color: #fff; font-weight: bold; }
+        #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; }
+        
+        /* Results placed to the LEFT of the box */
+        #res { width: 160px; display: flex; flex-direction: column; gap: 4px; min-height: 150px; }
+        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0 0 5px 0; min-height: 2.2rem; }
+        .stat { font-size: 0.8rem; font-family: 'Courier New', monospace; color: #888; letter-spacing: 1px; }
+        .stat span { color: #fff; font-weight: bold; }
 
-        #statcast-container { position: relative; width: 160px; height: 200px; }
+        /* Nestico Container: 160x200 */
+        #nestico-box { position: relative; width: 160px; height: 200px; }
         #strike-zone { 
-            position: absolute; left: 25px; top: 30px; width: 110px; height: 140px; 
-            border: 3px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.05);
+            position: absolute; 
+            left: 43px; /* Mapped to -0.7 Nestico */
+            top: 33px;  /* Mapped to 3.5 Nestico */
+            width: 74px; /* 0.7 to -0.7 width */
+            height: 133px; /* 1.5 to 3.5 height */
+            border: 3px solid rgba(255,255,255,0.9); 
+            background: rgba(255,255,255,0.08);
         }
-
+        
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #pitch-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
-        #swing-dot { width: 28px; height: 28px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
-        #tap-zone { position: absolute; width: 100%; height: 100%; z-index: 10; }
+        #p-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
+        #s-dot { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
     </style>
 </head>
 <body>
 
-    <div id="video-section">
-        <video id="v" autoplay muted loop playsinline>
-            <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-        </video>
+<div id="v-sec">
+    <video id="v" autoplay muted loop playsinline>
+        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+    </video>
+</div>
+
+<div id="dashboard">
+    <div id="res">
+        <h1 id="outcome"></h1>
+        <div class="stat">EXIT VELO: <span id="v-exit">-</span></div>
+        <div class="stat">LAUNCH ANGLE: <span id="v-ang">-</span></div>
+        <div class="stat">DISTANCE: <span id="v-dist">-</span></div>
     </div>
 
-    <div id="dashboard">
-        <div id="results-area">
-            <h1 id="outcome"></h1>
-            <div class="stat-line">DIST: <span id="s-dist">-</span></div>
-            <div class="stat-line">ANGLE: <span id="s-angle">-</span></div>
-            <div class="stat-line">EXIT: <span id="s-exit">-</span></div>
-        </div>
-
-        <div id="statcast-container">
-            <div id="tap-zone"></div>
-            <div id="strike-zone"></div>
-            <div id="pitch-dot" class="dot"></div>
-            <div id="swing-dot" class="dot"></div>
-        </div>
+    <div id="nestico-box">
+        <div id="tap"></div>
+        <div id="strike-zone"></div>
+        <div id="p-dot" class="dot"></div>
+        <div id="s-dot" class="dot"></div>
     </div>
+</div>
 
 <script>
     const video = document.getElementById('v');
     const outcome = document.getElementById('outcome');
-    const pDot = document.getElementById('pitch-dot');
-    const sDot = document.getElementById('swing-dot');
+    const pDot = document.getElementById('p-dot');
+    const sDot = document.getElementById('s-dot');
 
     const PITCHES = [
-        { id:1, t:0.95, nx:-0.75, ny:3.25 },
-        { id:2, t:6.40, nx:-0.40, ny:3.50 },
+        { id:1, t:0.95,  nx:-0.70, ny:3.25 },
+        { id:2, t:6.40,  nx:-0.40, ny:3.50 },
         { id:3, t:10.86, nx:-0.25, ny:2.75 },
-        { id:4, t:16.08, nx:0.15, ny:2.60 },
-        { id:5, t:21.50, nx:0.20, ny:2.75 },
+        { id:4, t:16.08, nx:0.15,  ny:2.60 },
+        { id:5, t:21.50, nx:0.20,  ny:2.75 },
         { id:6, t:28.03, nx:-0.90, ny:1.75 },
-        { id:7, t:33.00, nx:-0.75, ny:3.00 },
-        { id:8, t:36.17, nx:-0.90, ny:2.25 }
+        { id:7, t:34.20, nx:-0.70, ny:3.00 },
+        { id:8, t:41.84, nx:-0.90, ny:2.25 }
     ];
 
     function toPx(nx, ny) {
@@ -74,18 +82,21 @@
         return { x, y };
     }
 
-    let currentId = null;
+    let activeId = null;
 
     video.addEventListener('timeupdate', () => {
-        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
+        const now = video.currentTime;
+        const active = [...PITCHES].reverse().find(p => now >= p.t);
+
         if (active) {
-            if (currentId !== active.id) {
+            // NEW PITCH DETECTED: Reset UI for next attempt
+            if (activeId !== active.id) {
                 sDot.style.display = "none";
                 outcome.innerText = "";
-                document.getElementById('s-dist').innerText = "-";
-                document.getElementById('s-angle').innerText = "-";
-                document.getElementById('s-exit').innerText = "-";
-                currentId = active.id;
+                document.getElementById('v-exit').innerText = "-";
+                document.getElementById('v-ang').innerText = "-";
+                document.getElementById('v-dist').innerText = "-";
+                activeId = active.id;
             }
             const px = toPx(active.nx, active.ny);
             pDot.style.left = px.x + 'px'; pDot.style.top = px.y + 'px';
@@ -93,12 +104,12 @@
         }
     });
 
-    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
+    document.getElementById('tap').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
         if (!active) return;
 
-        const rect = document.getElementById('statcast-container').getBoundingClientRect();
+        const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
         const px = toPx(active.nx, active.ny);
@@ -106,25 +117,27 @@
         sDot.style.left = ux + 'px'; sDot.style.top = uy + 'px';
         sDot.style.display = 'block';
 
-        // Physics Logic (75mph bat speed baseline)
-        const v_pitch = 90; 
-        const v_bat = 75;
-        const offset = uy - px.y; // Vertical offset determines angle
+        // Physics: 75mph bat speed + center-point offset
+        const yDiff = px.y - uy; 
+        const angle = Math.round(yDiff * 2.1);
+        const exitVelo = Math.round((75 * 1.25) + (92 * 0.15) - (Math.abs(yDiff) * 0.4));
         
-        const launchAngle = Math.round(offset * -2.5); // Crude projection
-        const exitVel = Math.round((v_bat * 1.2) + (v_pitch * 0.2) - Math.abs(offset));
-        const distance = Math.round(exitVel * 2.5 * (1 + (launchAngle/100)));
-
-        document.getElementById('s-angle').innerText = launchAngle + "°";
-        document.getElementById('s-exit').innerText = exitVel + " MPH";
-        document.getElementById('s-dist').innerText = Math.max(0, distance) + " FT";
-
-        if (distance > 350 && Math.abs(offset) < 15) {
-            outcome.innerText = "HOME RUN"; outcome.style.color = "#00ffcc";
-        } else if (Math.abs(offset) > 25) {
-            outcome.innerText = "WHIFF"; outcome.style.color = "#ff4d4d";
+        // Results triggered by tap
+        if (Math.abs(yDiff) < 30) {
+            const dist = Math.round((exitVelo ** 2 / 31) * (1 + angle/45));
+            document.getElementById('v-ang').innerText = angle + "°";
+            document.getElementById('v-exit').innerText = exitVelo + " MPH";
+            document.getElementById('v-dist').innerText = Math.max(0, dist) + " FT";
+            
+            if (dist > 390 && angle > 18) {
+                outcome.innerText = "HOME RUN"; outcome.style.color = "#00ffcc";
+            } else if (angle < 0) {
+                outcome.innerText = "GROUNDER"; outcome.style.color = "#fff";
+            } else {
+                outcome.innerText = "FLY BALL"; outcome.style.color = "#fff";
+            }
         } else {
-            outcome.innerText = "IN PLAY"; outcome.style.color = "#fff";
+            outcome.innerText = "WHIFF"; outcome.style.color = "#ff4d4d";
         }
     });
 </script>
