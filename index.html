@@ -1,134 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Pro | Analytics</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@400;900&display=swap');
-        :root { --gold: #fcc419; --bg: #050505; --accent: #228be6; }
-        * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        /* VIDEO AREA */
-        #v-area { width: 100%; height: 45vh; position: relative; border-bottom: 1px solid #333; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-
-        /* GLASS OVERLAYS */
-        .overlay { 
-            position: absolute; inset: 0; z-index: 100; 
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        /* DATA PANEL */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 1.2fr; background: #111; gap: 1px; }
-        .panel { background: var(--bg); padding: 20px; display: flex; flex-direction: column; justify-content: center; }
-        .stat-group { margin-bottom: 15px; }
-        .label { font-size: 10px; color: #555; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase; }
-        .value { font-family: 'JetBrains Mono', monospace; font-size: 32px; color: #fff; }
-        .unit { font-size: 12px; color: #333; margin-left: 5px; }
-
-        /* NESTICO GRID */
-        #grid { 
-            width: 190px; height: 230px; background: #080808; 
-            border: 1px solid #222; position: relative; border-radius: 4px;
-        }
-        #strike-box { 
-            position: absolute; left: 25%; top: 16%; width: 50%; height: 68%; 
-            border: 1px solid rgba(255,255,255,0.15);
-            background: linear-gradient(to bottom right, rgba(255,255,255,0.05), transparent);
-        }
-
-        /* MARKERS */
-        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; }
-        #ball { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.4); z-index: 10; }
-        #bat { width: 36px; height: 36px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.15); z-index: 11; }
-
-        .btn { background: #fff; color: #000; padding: 14px 40px; border-radius: 100px; font-weight: 900; border: none; cursor: pointer; }
-    </style>
-</head>
-<body>
-
-<div id="v-area">
-    <div id="ui-start" class="overlay"><button class="btn" onclick="run()">START ANALYTICS</button></div>
-    <div id="ui-end" class="overlay" style="display:none;"><button class="btn" onclick="run()">REPLAY SESSION</button></div>
-    <video id="v" playsinline muted><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
-</div>
-
-<div id="dashboard">
-    <div class="panel">
-        <div class="stat-group"><div class="label">Exit Velocity</div><div class="value" id="ev">0.0<span class="unit">MPH</span></div></div>
-        <div class="stat-group"><div class="label">Timing</div><div class="value" id="timing" style="font-size: 20px; color: var(--accent);">IDLE</div></div>
-    </div>
-    <div class="panel" style="align-items: center;">
-        <div id="grid" onpointerdown="swing(event)">
-            <div id="strike-box"></div>
-            <div id="ball" class="marker"></div>
-            <div id="bat" class="marker"></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const v = document.getElementById('v');
-    const PITCHES = [
-        {t: 0.92, x: -0.75, y: 3.25}, {t: 6.40, x: -0.40, y: 3.50},
-        {t: 10.86,x: -0.25, y: 2.75}, {t: 16.08,x: 0.15,  y: 2.60},
-        {t: 21.50,x: 0.20,  y: 2.75}, {t: 28.03,x: -0.90, y: 1.75},
-        {t: 36.17,x: -0.75, y: 3.00}, {t: 41.84,x: -0.90, y: 2.25}
-    ];
-
-    let state = { idx: -1, active: false };
-
-    function run() {
-        document.getElementById('ui-start').style.display = 'none';
-        document.getElementById('ui-end').style.display = 'none';
-        v.currentTime = 0;
-        v.play();
+<style>
+    /* Add this to your existing styles */
+    #bat { 
+        width: 38px; 
+        height: 38px; 
+        border: 2px solid var(--gold); 
+        background: rgba(252, 196, 25, 0.2); 
+        z-index: 11;
+        transition: opacity 0.1s; /* Quick fade */
+        pointer-events: none;
+        position: absolute;
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(1);
     }
 
-    // Coordinate Conversion
-    const getX = (val) => 95 + (val * 63);
-    const getY = (val) => 230 - ((val - 1.0) * 76);
+    /* The "Pop" animation for new taps */
+    .tap-pulse {
+        animation: pulse 0.2s ease-out;
+    }
 
-    v.ontimeupdate = () => {
-        let now = v.currentTime;
-        // Detect end of video
-        if (v.duration && now >= v.duration - 0.2) {
-            document.getElementById('ui-end').style.display = 'flex';
-        }
+    @keyframes pulse {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+</style>
 
-        let match = PITCHES.findIndex(p => now >= p.t - 0.05 && now < p.t + 0.45);
-        if (match !== -1 && match !== state.idx) {
-            state.idx = match; state.active = true;
-            const b = document.getElementById('ball');
-            b.style.left = getX(PITCHES[match].x) + 'px';
-            b.style.top = getY(PITCHES[match].y) + 'px';
-            b.style.opacity = 1;
-            document.getElementById('bat').style.opacity = 0;
-        }
-    };
-
+<script>
     function swing(e) {
-        if (!state.active) return;
-        state.active = false;
-        
         const rect = document.getElementById('grid').getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
-        const p = PITCHES[state.idx];
-
-        const bat = document.getElementById('bat');
-        bat.style.left = sx + 'px'; bat.style.top = sy + 'px'; bat.style.opacity = 1;
-
-        const dt = v.currentTime - p.t;
-        const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
         
-        document.getElementById('ev').innerHTML = Math.max(0, 114 - (dist * 1.3)).toFixed(1) + `<span class="unit">MPH</span>`;
-        document.getElementById('timing').innerText = dt < -0.05 ? "EARLY" : (dt > 0.15 ? "LATE" : "PERFECT");
-        document.getElementById('timing').style.color = Math.abs(dt) < 0.1 ? "var(--gold)" : "var(--accent)";
+        const bat = document.getElementById('bat');
+        
+        // 1. Reset Animation (Remove and re-add class to trigger 'pop')
+        bat.classList.remove('tap-pulse');
+        void bat.offsetWidth; // Trigger reflow
+        bat.classList.add('tap-pulse');
+
+        // 2. Move to new tap immediately
+        bat.style.left = sx + 'px'; 
+        bat.style.top = sy + 'px'; 
+        bat.style.opacity = 1;
+
+        if (state.idx !== -1) {
+            const p = PITCHES[state.idx];
+            const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
+            const dt = v.currentTime - p.t;
+
+            // CONTACT CHECK: Using your logic - must overlap the white dot
+            if (dist < 45) {
+                const ev = Math.max(0, 114 - (dist * 1.5)).toFixed(1);
+                document.getElementById('ev').innerText = ev;
+                
+                const tNode = document.getElementById('timing');
+                if (Math.abs(dt) < 0.1) {
+                    tNode.innerText = "PERFECT";
+                    tNode.style.color = "var(--gold)";
+                } else {
+                    tNode.innerText = dt < 0 ? "EARLY" : "LATE";
+                    tNode.style.color = "var(--neon)";
+                }
+            } else {
+                // CLEAR DATA ON MISS
+                document.getElementById('ev').innerText = "0.0";
+                document.getElementById('timing').innerText = "MISS";
+                document.getElementById('timing').style.color = "var(--red)";
+            }
+        }
     }
 </script>
-</body>
-</html>
