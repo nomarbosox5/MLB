@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>METAVERSE STATCAST • MVP</title>
+    <title>METAVERSE STATCAST • T-Mobile Park Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
@@ -11,39 +11,56 @@
         body {
             background: #000;
             font-family: 'Orbitron', sans-serif;
-            color: white;
             overflow: hidden;
         }
         
         .video-container {
             position: relative;
-            box-shadow: 0 0 40px #22d3ee;
+            box-shadow: 0 0 30px #22d3ee;
         }
         
-        .strike-zone-box {
-            width: 128px;
-            height: 160px;
-            border: 3px solid #fff;
-            position: relative;
-            background: #0a0a0a;
+        .blue-grid {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                transparent 0px,
+                transparent 33.33%,
+                rgba(103, 232, 249, 0.65) 33.33%,
+                rgba(103, 232, 249, 0.65) 33.4%
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 33.33%,
+                rgba(103, 232, 249, 0.65) 33.33%,
+                rgba(103, 232, 249, 0.65) 33.4%
+            );
+            pointer-events: none;
+            z-index: 10;
         }
         
-        .gray-bar {
-            background: linear-gradient(#555, #aaa);
-            color: black;
-            font-weight: 700;
+        .red-1 {
+            position: absolute;
+            font-size: 6rem;
+            font-weight: 900;
+            color: #ef4444;
+            text-shadow: 0 0 20px #ef4444;
+            z-index: 20;
+            pointer-events: none;
+            animation: pop 1.2s forwards;
         }
         
-        .yellow-text {
-            color: #facc15;
-            text-shadow: 0 0 10px #facc15;
+        @keyframes pop {
+            0% { transform: scale(0.4); opacity: 0; }
+            30% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 0.9; }
         }
     </style>
 </head>
-<body>
+<body class="bg-black text-white">
 
 <div class="flex flex-col h-screen">
-    <!-- VIDEO WITH GRID -->
+    <!-- VIDEO -->
     <div class="flex-1 relative video-container">
         <video id="pitch-video" 
                class="w-full h-full object-cover"
@@ -51,16 +68,20 @@
                src="ScreenRecording_04-17-2026 18-27-36_1.mp4">
         </video>
         
-        <!-- Light blue 3x3 grid overlay like your screenshot -->
-        <div class="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none border border-cyan-400/70">
-            <div class="border-r border-b border-cyan-400/50"></div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
-            <div class="border-r border-b border-cyan-400/50 flex items-center justify-center text-6xl font-bold text-red-500/80">1</div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
-            <div class="border-r border-b border-cyan-400/50"></div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
-        </div>
+        <!-- Blue Grid Overlay (exactly like your screenshots) -->
+        <div id="blue-grid" class="blue-grid"></div>
+        
+        <!-- Red "1" Indicator -->
+        <div id="red-one" class="red-1 hidden">1</div>
     </div>
 
     <!-- BOTTOM STATCAST PANEL -->
-    <div class="bg-black border-t-4 border-cyan-400 grid grid-cols-2">
+    <div class="bg-black border-t-4 border-cyan-400 grid grid-cols-2 divide-x divide-cyan-400/30">
         
-        <!-- LEFT SIDE -->
-        <div class="p-6 space-y-6
+        <!-- LEFT -->
+        <div class="p-6 space-y-6">
+            <div>
+                <div class="text-cyan-400 text-xs tracking-widest">EXIT VELO</div>
+                <div id="exit-velo" class="text-7xl font-bold text-yellow-400">0.0</div>
+                <div class="text-xs text-gray-400 -mt-1">MPH</div>
+            </div
