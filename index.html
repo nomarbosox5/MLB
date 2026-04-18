@@ -1,129 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-            position: absolute;
-            left: 54px; top: 60px; /* 0.30 to 0.70 X | 0.35 to 0.75 Y */
-            width: 72px; height: 96px;
-            border: 1.5px solid rgba(255, 255, 255, 0.8);
-            background: rgba(255, 255, 255, 0.01);
-            pointer-events: none;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Baseball Tap</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: 'Arial Black', sans-serif; overflow: hidden; text-transform: uppercase; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        
+        /* Video Background */
+        video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 
-        /* PITCH MARKERS */
-        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
-        #pitch-tracker { width: 14px; height: 14px; background: var(--red); box-shadow: 0 0 15px var(--red); z-index: 10; }
-        #swing-tracker { width: 35px; height: 35px; border: 2px solid var(--gold); background: rgba(252,196,25,0.2); z-index: 11; transition: opacity 0.1s; }
+        /* HUD UI */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        
+        .scoreboard { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 10px; border-left: 4px solid #f39c12; }
+        .diamond { position: absolute; top: 20px; left: 20px; width: 80px; height: 80px; }
+        
+        /* Swing Feedback Box */
+        #feedback { position: absolute; left: 20px; bottom: 200px; background: rgba(0,0,0,0.85); border: 1px solid #444; padding: 10px; display: none; width: 200px; }
+        .feedback-label { font-size: 10px; color: #aaa; }
+        .feedback-value { font-size: 18px; margin-bottom: 5px; }
+        .hit-speed { color: #f1c40f; }
+
+        /* Strike Zone Interaction */
+        #strike-zone-canvas { position: absolute; z-index: 5; cursor: crosshair; }
+
+        .count-dots { display: flex; gap: 5px; margin-top: 5px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; }
+        .dot.active-strike { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
+        .dot.active-ball { background: #3498db; }
+        .dot.active-out { background: #e74c3c; }
     </style>
 </head>
 <body>
 
-<div id="video-layer">
-    <video id="broadcast" playsinline autoplay muted loop>
+<div id="game-container">
+    <video id="pitchVideo" muted playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
 
-    <div id="hud-anchor">
-        <div id="data-card">
-            <div class="stat-line"><div class="label">Exit Velo</div><div id="velo-out" class="value">---</div></div>
-            <div class="stat-line"><div class="label">Timing</div><div id="time-out" class="value">---</div></div>
-            <div id="call-result">LIVE</div>
+    <canvas id="strike-zone-canvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="scoreboard">
+            <div>DET <span id="score-det">0</span></div>
+            <div>SD  <span id="score-sd">3</span></div>
+            <hr>
+            <div id="count-display">
+                B <div class="count-dots" id="balls-dots"></div>
+                S <div class="count-dots" id="strikes-dots"></div>
+                O <div class="count-dots" id="outs-dots"></div>
+            </div>
         </div>
 
-        <div id="interactive-zone" onpointerdown="handleSwing(event)">
-            <div id="strike-box"></div>
-            <div id="pitch-tracker" class="marker"></div>
-            <div id="swing-tracker" class="marker"></div>
+        <div id="feedback">
+            <div class="feedback-label">SWING TIMING</div>
+            <div id="swing-timing" class="feedback-value">---</div>
+            <div class="feedback-label">CONTACT RESULT</div>
+            <div id="contact-result" class="feedback-value">---</div>
+            <div class="feedback-label">HIT SPEED</div>
+            <div id="hit-speed" class="feedback-value hit-speed">0 MPH</div>
         </div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('broadcast');
+    const video = document.getElementById('pitchVideo');
+    const canvas = document.getElementById('strike-zone-canvas');
+    const ctx = canvas.getContext('2d');
     
-    // SEQUENCE DATA (0-1 Normalized Coordinates)
-    const SEQUENCE = [
-        { t: 0.92,  x: 0.20, y: 0.55 }, { t: 6.40,  x: 0.25, y: 0.62 }, 
-        { t: 10.86, x: 0.42, y: 0.52 }, { t: 16.08, x: 0.42, y: 0.50 },
-        { t: 21.50, x: 0.48, y: 0.48 }, { t: 28.03, x: 0.18, y: 0.55 },
-        { t: 36.17, x: 0.22, y: 0.52 }, { t: 41.84, x: 0.20, y: 0.50 }
+    // Pitch Data
+    const pitches = [
+        { t: 0.92, x: -0.75, y: 0.75 },
+        { t: 6.40, x: -0.40, y: 1.00 },
+        { t: 10.86, x: -0.25, y: 0.25 },
+        { t: 16.08, x: 0.15, y: 0.10 },
+        { t: 21.50, x: -0.95, y: -0.75 },
+        { t: 28.03, x: 0.20, y: 0.25 },
+        { t: 36.17, x: -0.95, y: 0.00 },
+        { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
-    let activePitchIdx = -1;
-    let swungThisPitch = false;
+    let gameState = { balls: 0, strikes: 0, outs: 0, score: 3 };
+    let canSwing = true;
 
-    // Map Normalized to Pixels (180x240)
-    const toPxX = (v) => v * 180;
-    const toPxY = (v) => (1 - v) * 240; 
-
-    video.ontimeupdate = () => {
-        const now = video.currentTime;
-        let found = -1;
-
-        for (let i = 0; i < SEQUENCE.length; i++) {
-            const p = SEQUENCE[i];
-            const next = SEQUENCE[i+1];
-            // THE HALFWAY RESET LOGIC
-            const resetTime = next ? p.t + (next.t - p.t) / 2 : p.t + 2.0;
-
-            if (now >= p.t - 0.25 && now < resetTime) {
-                found = i;
-                renderPitch(p);
-            }
-        }
-
-        if (found === -1) resetHUD();
-        if (found !== activePitchIdx) {
-            activePitchIdx = found;
-            swungThisPitch = false;
-        }
-    };
-
-    function renderPitch(p) {
-        const dot = document.getElementById('pitch-tracker');
-        dot.style.left = toPxX(p.x) + 'px';
-        dot.style.top = toPxY(p.y) + 'px';
-        dot.style.opacity = 1;
-
-        // Passive Umpire: Strike Zone check
-        const strike = (p.x >= 0.3 && p.x <= 0.7 && p.y >= 0.35 && p.y <= 0.75);
-        const resLabel = document.getElementById('call-result');
-        resLabel.innerText = strike ? "STRIKE" : "BALL";
-        resLabel.style.color = strike ? "var(--gold)" : "#fff";
+    // Strike Zone Mapping (Normalized -1 to 1)
+    function setupCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
 
-    function resetHUD() {
-        document.getElementById('pitch-tracker').style.opacity = 0;
-        document.getElementById('swing-tracker').style.opacity = 0;
-        document.getElementById('call-result').innerText = "LIVE";
-        document.getElementById('call-result').style.color = "var(--gold)";
-        document.getElementById('velo-out').innerText = "---";
-        document.getElementById('time-out').innerText = "---";
+    function drawZone() {
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+        const w = 200; const h = 280;
+        const cx = canvas.width / 2; const cy = canvas.height / 2 + 50;
+        
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cx - w/2, cy - h/2, w, h);
+        
+        // Draw Grid
+        ctx.beginPath();
+        ctx.moveTo(cx - w/6, cy - h/2); ctx.lineTo(cx - w/6, cy + h/2);
+        ctx.moveTo(cx + w/6, cy - h/2); ctx.lineTo(cx + w/6, cy + h/2);
+        ctx.moveTo(cx - w/2, cy - h/6); ctx.lineTo(cx + w/2, cy - h/6);
+        ctx.moveTo(cx - w/2, cy + h/6); ctx.lineTo(cx + w/2, cy + h/6);
+        ctx.stroke();
     }
 
-    function handleSwing(e) {
-        if (activePitchIdx === -1 || swungThisPitch) return;
+    window.addEventListener('resize', setupCanvas);
+    setupCanvas();
+    drawZone();
 
-        const rect = document.getElementById('interactive-zone').getBoundingClientRect();
-        const touchX = e.clientX - rect.left;
-        const touchY = e.clientY - rect.top;
+    // Game Logic
+    canvas.addEventListener('mousedown', (e) => {
+        if (!canSwing) return;
+        
+        const currentTime = video.currentTime;
+        const activePitch = pitches.find(p => Math.abs(currentTime - p.t) < 0.5);
 
-        const sDot = document.getElementById('swing-tracker');
-        sDot.style.left = touchX + 'px'; sDot.style.top = touchY + 'px'; sDot.style.opacity = 1;
-
-        const p = SEQUENCE[activePitchIdx];
-        const dist = Math.sqrt(Math.pow(touchX - toPxX(p.x), 2) + Math.pow(touchY - toPxY(p.y), 2));
-
-        // Interaction Results
-        if (dist < 48) {
-            const mph = (112 - (dist * 1.6)).toFixed(1);
-            const diff = video.currentTime - p.t;
-            document.getElementById('velo-out').innerText = mph + " MPH";
-            document.getElementById('time-out').innerText = Math.abs(diff) < 0.1 ? "PERFECT" : (diff < 0 ? "EARLY" : "LATE");
+        if (activePitch) {
+            processSwing(e, activePitch);
         } else {
-            document.getElementById('velo-out').innerText = "0.0 MPH";
-            document.getElementById('time-out').innerText = "WHIFF";
+            updateCount('strike'); // Swung at nothing
         }
+    });
 
-        swungThisPitch = true;
+    function processSwing(e, pitch) {
+        const rect = canvas.getBoundingClientRect();
+        const tapX = ((e.clientX - rect.left) / canvas.width * 2) - 1;
+        const tapY = -(((e.clientY - rect.top) / canvas.height * 2) - 1);
+
+        // Calculate distance from pitch center
+        const dist = Math.sqrt(Math.pow(tapX - pitch.x, 2) + Math.pow(tapY - pitch.y, 2));
+        
+        let timing = "GOOD";
+        let result = "SQUARED UP";
+        let speed = Math.floor(100 + Math.random() * 10);
+
+        if (dist < 0.15) {
+            showFeedback("PERFECT", "SQUARED UP", speed + " MPH");
+            resetPlateCount(); // Base hit
+        } else if (dist < 0.4) {
+            showFeedback("GOOD", "SOLID CONTACT", (speed - 15) + " MPH");
+            updateCount('strike'); // Foul ball/Out logic
+        } else {
+            showFeedback("TOO LATE", "WHIFF", "0 MPH");
+            updateCount('strike');
+        }
     }
+
+    function updateCount(type) {
+        if (type === 'strike') gameState.strikes++;
+        if (type === 'ball') gameState.balls++;
+
+        if (gameState.strikes >= 3) {
+            gameState.outs++;
+            resetPlateCount();
+        }
+        if (gameState.balls >= 4) {
+            resetPlateCount(); // Walk
+        }
+        if (gameState.outs >= 3) {
+            gameState.outs = 0;
+        }
+        renderUI();
+    }
+
+    function resetPlateCount() {
+        gameState.strikes = 0;
+        gameState.balls = 0;
+        renderUI();
+    }
+
+    function showFeedback(timing, result, speed) {
+        document.getElementById('feedback').style.display = 'block';
+        document.getElementById('swing-timing').innerText = timing;
+        document.getElementById('contact-result').innerText = result;
+        document.getElementById('hit-speed').innerText = speed;
+        
+        setTimeout(() => {
+            document.getElementById('feedback').style.display = 'none';
+        }, 2000);
+    }
+
+    function renderUI() {
+        const drawDots = (id, count, max, cssClass) => {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            for(let i=0; i<max; i++) {
+                let dot = document.createElement('div');
+                dot.className = `dot ${i < count ? cssClass : ''}`;
+                el.appendChild(dot);
+            }
+        };
+
+        drawDots('balls-dots', gameState.balls, 3, 'active-ball');
+        drawDots('strikes-dots', gameState.strikes, 2, 'active-strike');
+        drawDots('outs-dots', gameState.outs, 2, 'active-out');
+    }
+
+    video.addEventListener('ended', () => {
+        video.currentTime = 0;
+        video.play();
+    });
+
+    // Start
+    renderUI();
+    video.play();
+
 </script>
 </body>
 </html>
