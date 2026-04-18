@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cronin Statcast Pro</title>
     <style>
-        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --field-green: #1a331a; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
@@ -17,46 +17,50 @@
 
         #deck { 
             height: 60vh; display: grid; grid-template-columns: 1fr 1fr; 
-            background: var(--bg); padding: 10px; gap: 10px;
+            background: var(--bg); padding: 10px; gap: 8px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
         /* Left Side: Field & Stats */
-        .left-panel { display: flex; flex-direction: column; gap: 8px; position: relative; }
+        .left-panel { display: flex; flex-direction: column; gap: 6px; }
         
-        /* Compact Pro Field */
         #field-container { 
-            flex-grow: 1; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
+            flex-grow: 1; background: #080808; border: 1px solid #222; border-radius: 4px; 
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
-        .field-svg { width: 95%; height: 95%; transform: scale(1.1); }
+        .field-svg { width: 90%; height: 90%; }
 
-        .broadcast-data { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; border-left: 3px solid var(--gold); }
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; font-weight: 800; font-size: 12px; }
+        /* Results Bar above HR Fence */
+        .feedback-bar { 
+            position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+            width: 80%; background: rgba(0,0,0,0.8); border: 1px solid #444;
+            display: flex; justify-content: space-around; padding: 2px 0;
+            font-size: 8px; font-weight: 800; text-transform: uppercase; opacity: 0; transition: 0.3s;
+        }
+
+        .broadcast-data { background: rgba(255,255,255,0.03); padding: 6px; border-radius: 2px; border-left: 3px solid var(--gold); }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; font-weight: 800; font-size: 11px; }
         .dots { display: flex; gap: 3px; }
-        .dot { width: 9px; height: 9px; border-radius: 50%; background: #222; border: 1px solid #444; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #444; }
         .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #ff4757; }
 
-        /* Proper Diamond Formation */
-        .diamond-formation { 
-            position: absolute; bottom: 80px; right: 10px; width: 50px; height: 50px; 
-            display: flex; align-items: center; justify-content: center; z-index: 10;
-        }
-        .base-pip { position: absolute; width: 10px; height: 10px; background: #222; transform: rotate(45deg); border: 1px solid #444; transition: 0.3s; }
-        #pip-2 { top: 0; left: 20px; } /* Second Base */
-        #pip-3 { top: 20px; left: 0; }  /* Third Base */
-        #pip-1 { top: 20px; right: 0; } /* First Base */
-        .occupied { background: var(--gold) !important; box-shadow: 0 0 10px var(--gold); border-color: #fff; }
+        /* Diamond Overlaid on Field */
+        .diamond-overlay { position: absolute; bottom: 15px; left: 50%; width: 40px; height: 40px; transform: translateX(-50%); pointer-events: none; }
+        .base-pip { position: absolute; width: 8px; height: 8px; background: #333; transform: rotate(45deg); border: 1px solid #555; transition: 0.3s; }
+        #pip-2 { top: 0; left: 16px; } 
+        #pip-3 { top: 16px; left: 0; }  
+        #pip-1 { top: 16px; right: 0; } 
+        .occupied { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); border-color: #fff; }
 
         /* Right Side: Strike Zone */
-        .zone-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+        .zone-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #sz { 
-            width: 160px; height: 210px; border: 2px solid rgba(255,255,255,0.3); 
+            width: 160px; height: 210px; border: 2px solid rgba(255,255,255,0.25); 
             position: relative; background: rgba(255,255,255,0.02); touch-action: none;
         }
-        .grid { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
-        .ball-sprite { position: absolute; width: 24px; height: 24px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #ccc; box-shadow: 0 0 10px #fff; z-index: 10; font-size: 10px; color: #000; font-weight: 900; display: flex; align-items: center; justify-content: center; }
-        .preview-ball { position: absolute; width: 18px; height: 18px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        .grid { position: absolute; background: rgba(255,255,255,0.06); pointer-events: none; }
+        .ball-sprite { position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #ccc; z-index: 10; font-size: 9px; color: #000; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+        .preview-ball { position: absolute; width: 16px; height: 16px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -73,17 +77,20 @@
         </div>
         
         <div id="field-container">
-            <div class="diamond-formation">
+            <div class="feedback-bar" id="fb-bar">
+                <span id="fb-timing">GOOD</span>
+                <span id="fb-dist" style="color:var(--gold)">0 FT</span>
+            </div>
+            <div class="diamond-overlay">
                 <div id="pip-2" class="base-pip"></div>
                 <div id="pip-3" class="base-pip"></div>
                 <div id="pip-1" class="base-pip"></div>
             </div>
             <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
-                <path d="M50 95 L15 45 Q50 5 85 45 Z" fill="#142614" />
-                <line x1="50" y1="95" x2="10" y2="40" stroke="white" stroke-width="0.5" />
-                <line x1="50" y1="95" x2="90" y2="40" stroke="white" stroke-width="0.5" />
-                <circle cx="50" cy="95" r="30" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2,2" /> <circle cx="50" cy="95" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2,2" /> <circle cx="50" cy="95" r="70" fill="none" stroke="rgba(255,255,255,0.2)" /> <text x="50" y="22" font-size="3" fill="#444" text-anchor="middle">HR FENCE</text>
-            </svg>
+                <path d="M50 95 L15 45 Q50 5 85 45 Z" fill="#0d140d" />
+                <line x1="50" y1="95" x2="10" y2="40" stroke="#333" stroke-width="0.5" />
+                <line x1="50" y1="95" x2="90" y2="40" stroke="#333" stroke-width="0.5" />
+                <circle cx="50" cy="95" r="70" fill="none" stroke="rgba(255,255,255,0.1)" /> </svg>
         </div>
     </div>
 
@@ -94,7 +101,6 @@
             <div class="grid" style="height:1px; width:100%; top:33.3%"></div>
             <div class="grid" style="height:1px; width:100%; top:66.6%"></div>
         </div>
-        <div style="font-size: 9px; color: #444; letter-spacing: 1px; font-weight: 700;">STRIKE ZONE SIMULATOR</div>
     </div>
 </div>
 
@@ -102,6 +108,7 @@
     const v = document.getElementById('v');
     const sz = document.getElementById('sz');
     const field = document.getElementById('field-svg');
+    const fb = document.getElementById('fb-bar');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -111,21 +118,6 @@
     ];
 
     let game = { r:0, b:0, s:0, o:0, bases:[false,false,false], locked: false };
-
-    function drawHit(ft, angle) {
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        // Scale distance to fit SVG (max ft ~450 -> radius ~80)
-        const radius = (ft / 450) * 80;
-        const x2 = 50 + (angle * 0.8);
-        const y2 = 95 - radius;
-        
-        line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
-        line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-        line.setAttribute("stroke", "var(--orange)");
-        line.setAttribute("stroke-width", "1.5");
-        line.setAttribute("class", "hit-line");
-        field.appendChild(line);
-    }
 
     function updateUI() {
         document.getElementById('r-val').innerText = game.r;
@@ -158,6 +150,7 @@
         if(p) {
             const px = ((p.x + 0.75) / 1.5) * 160;
             const py = ((1.0 - p.y) / 2.0) * 210;
+            const diff = Math.abs(time - p.t);
             const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
             
             const ball = document.createElement('div'); ball.className = 'ball-sprite'; ball.innerText = '1';
@@ -165,8 +158,7 @@
 
             if(dist < 40) {
                 let ft = Math.floor(420 - (dist * 4));
-                drawHit(ft, tx-px);
-                handleHitLogic(ft);
+                handleHit(ft, tx-px, diff);
             } else { game.s++; }
         } else { game.s++; }
         
@@ -174,7 +166,19 @@
         updateUI();
     });
 
-    function handleHitLogic(ft) {
+    function handleHit(ft, angle, diff) {
+        fb.style.opacity = 1;
+        document.getElementById('fb-dist').innerText = ft + " FT";
+        document.getElementById('fb-timing').innerText = diff < 0.1 ? "PERFECT" : "GOOD";
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const radius = (ft / 450) * 80;
+        line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
+        line.setAttribute("x2", 50 + (angle * 0.8)); line.setAttribute("y2", 95 - radius);
+        line.setAttribute("stroke", "var(--orange)"); line.setAttribute("stroke-width", "1.5");
+        line.setAttribute("class", "hit-line");
+        field.appendChild(line);
+
         let m = 0;
         if(ft >= 400) m = 4; else if(ft >= 300) m = 2; else if(ft >= 200) m = 1;
         if(m > 0) {
@@ -189,8 +193,7 @@
 
     setInterval(() => {
         const now = v.currentTime;
-        // Baseball preview 0.4s before
-        const up = pitches.find(p => p.t > now && p.t - now < 0.4);
+        const up = pitches.find(p => p.t > now && p.t - now < 0.15); // Appearing 0.15s before
         sz.querySelectorAll('.preview-ball').forEach(pb => pb.remove());
         if(up) {
             const ux = ((up.x + 0.75) / 1.5) * 160;
@@ -201,9 +204,10 @@
 
         if (now < 0.3) {
             game.locked = false;
+            fb.style.opacity = 0;
             field.querySelectorAll('.hit-line').forEach(l => l.remove());
             sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33.3%"></div><div class="grid" style="width:1px; height:100%; left:66.6%"></div><div class="grid" style="height:1px; width:100%; top:33.3%"></div><div class="grid" style="height:1px; width:100%; top:66.6%"></div>';
-        } else if (pitches.some(p => p.t > now && p.t - now < 0.4)) {
+        } else if (pitches.some(p => p.t > now && p.t - now < 0.3)) {
             game.locked = false;
         }
     }, 50);
