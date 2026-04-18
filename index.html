@@ -3,47 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Statcast MVP</title>
+    <title>Statcast Pro - Inning Mode</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         #v-sec { width: 100%; position: relative; background: #000; }
-        video { width: 100%; max-height: 48vh; display: block; object-fit: contain; }
+        video { width: 100%; max-height: 46vh; display: block; object-fit: contain; }
 
-        /* BROADCAST SCOREBOARD */
+        /* UPDATED BROADCAST BAR */
         #broadcast-bar { 
-            background: #111; border-top: 2px solid #333; border-bottom: 2px solid #333; padding: 12px 20px; 
-            display: flex; justify-content: space-between; align-items: center; font-weight: bold;
+            background: #111; border-top: 2px solid #333; border-bottom: 2px solid #333; padding: 10px 15px; 
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .score-box { font-size: 1rem; color: #aaa; }
-        .score-box b { color: #00ffcc; font-size: 1.2rem; margin-left: 5px; }
-        #count-display { font-family: monospace; font-size: 1.4rem; letter-spacing: 2px; }
+        .stats-main { display: flex; gap: 15px; align-items: center; }
+        .score-box b { color: #00ffcc; font-size: 1.1rem; }
+        #count-ui { font-family: monospace; font-size: 1.3rem; font-weight: 900; color: #fff; }
+        .out-dots { display: flex; gap: 4px; align-items: center; font-size: 0.7rem; color: #777; }
+        .out-dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #444; background: #222; }
+        .out-dot.filled { background: #ff4d4d; border-color: #ff8888; box-shadow: 0 0 5px #ff4d4d; }
         
-        /* BASE DIAMOND */
-        .diamond { display: grid; grid-template-columns: repeat(2, 14px); gap: 6px; transform: rotate(45deg); }
-        .base { width: 12px; height: 12px; border: 1px solid #444; background: #222; transition: background 0.3s; }
-        .base.filled { background: #f1c40f; border-color: #fff; box-shadow: 0 0 8px #f1c40f; }
+        .diamond { display: grid; grid-template-columns: repeat(2, 12px); gap: 5px; transform: rotate(45deg); }
+        .base { width: 10px; height: 10px; border: 1px solid #444; background: #222; }
+        .base.on { background: #f1c40f; border-color: #fff; }
 
         /* DASHBOARD */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 15px; gap: 15px; }
-        #reports { display: flex; flex-direction: column; gap: 5px; }
-        #timing-ui { font-size: 0.8rem; font-weight: 800; min-height: 1.1rem; }
-        #outcome { font-size: 1.7rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; line-height: 1; }
-        .stat { font-size: 0.7rem; color: #666; font-family: monospace; }
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 10px; gap: 10px; }
+        #reports { display: flex; flex-direction: column; gap: 4px; }
+        #timing-ui { font-size: 0.8rem; font-weight: 900; min-height: 1rem; }
+        #outcome { font-size: 1.6rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
+        .stat { font-size: 0.7rem; color: #555; font-family: monospace; }
         .stat b { color: #fff; }
 
-        #field { 
-            position: relative; width: 85px; height: 85px; background: #0a0a0a; 
-            border-radius: 0 100% 0 0; transform: rotate(-45deg); 
-            border-left: 2px solid #333; border-bottom: 2px solid #333; overflow: hidden; margin-top: 8px;
-        }
-        #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s ease-out; }
+        #field { position: relative; width: 70px; height: 70px; background: #0a0a0a; border-radius: 0 100% 0 0; transform: rotate(-45deg); border-left: 2px solid #333; border-bottom: 2px solid #333; overflow: hidden; margin-top: 5px; }
+        #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s; }
 
         /* NESTICO ZONE */
-        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.01); }
-        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.5); }
+        #nestico-box { position: relative; width: 160px; height: 200px; }
+        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.4); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #p-dot { width: 16px; height: 16px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; z-index: 5; }
-        #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #p-dot { width: 14px; height: 14px; background: white; opacity: 0; z-index: 5; }
+        #s-dot { width: 22px; height: 22px; background: #ff4d4d; border: 1px solid #fff; display: none; z-index: 6; }
         #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
     </style>
 </head>
@@ -54,8 +52,15 @@
 </div>
 
 <div id="broadcast-bar">
-    <div class="score-box">RUNS <b id="run-val">0</b></div>
-    <div id="count-display">0-0</div>
+    <div class="stats-main">
+        <div class="score-box">RUNS <b id="run-val">0</b></div>
+        <div id="count-ui">0-0</div>
+        <div class="out-dots">
+            OUTS 
+            <div class="out-dot" id="out-1"></div>
+            <div class="out-dot" id="out-2"></div>
+        </div>
+    </div>
     <div class="diamond">
         <div class="base" id="b2"></div><div class="base" id="b1"></div>
         <div class="base" id="b3"></div><div class="base" style="opacity:0"></div>
@@ -66,8 +71,7 @@
     <div id="reports">
         <div id="timing-ui"></div>
         <h1 id="outcome"></h1>
-        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; ANG: <b id="v-an">-</b></div>
-        <div class="stat">DIST: <b id="v-di">-</b></div>
+        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; DIST: <b id="v-di">-</b></div>
         <div id="field"><div id="hit-line"></div></div>
     </div>
     <div id="nestico-box">
@@ -80,7 +84,6 @@
 
 <script>
     const video = document.getElementById('v');
-    // YOUR PRECISE TIMINGS LOADED HERE
     const PITCHES = [
         { id:1, t:0.92,  nx:-0.75, ny:3.25, strike:true },
         { id:2, t:6.40,  nx:-0.40, ny:3.50, strike:true },
@@ -92,28 +95,34 @@
         { id:8, t:41.84, nx:-0.90, ny:2.25, strike:false }
     ];
 
-    let game = { runs: 0, b: 0, s: 0, activeId: null, swung: false };
+    let game = { runs: 0, b: 0, s: 0, outs: 0, activeId: null, swung: false };
 
-    function syncCount() {
-        if (game.s >= 3 || game.b >= 4) { game.b = 0; game.s = 0; resetBases(); }
-        document.getElementById('count-display').innerText = `${game.b}-${game.s}`;
+    function updateUI() {
+        if (game.s >= 3) { game.outs++; game.s=0; game.b=0; }
+        if (game.b >= 4) { document.getElementById('b1').classList.add('on'); game.b=0; game.s=0; }
+        if (game.outs >= 3) { game.outs=0; resetInning(); }
+        
+        document.getElementById('count-ui').innerText = `${game.b}-${game.s}`;
+        document.getElementById('out-1').className = game.outs >= 1 ? 'out-dot filled' : 'out-dot';
+        document.getElementById('out-2').className = game.outs >= 2 ? 'out-dot filled' : 'out-dot';
+        document.getElementById('run-val').innerText = game.runs;
     }
-    function resetBases() { document.querySelectorAll('.base').forEach(b => b.classList.remove('filled')); }
+
+    function resetInning() {
+        document.querySelectorAll('.base').forEach(b => b.classList.remove('on'));
+        document.getElementById('outcome').innerText = "INNING OVER";
+    }
 
     video.addEventListener('timeupdate', () => {
-        const now = video.currentTime;
-        const active = [...PITCHES].reverse().find(p => now >= p.t);
-
+        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
         if (active && game.activeId !== active.id) {
             if (game.activeId !== null && !game.swung) {
                 const prev = PITCHES.find(p => p.id === game.activeId);
                 prev.strike ? game.s++ : game.b++;
-                syncCount();
+                updateUI();
             }
             game.activeId = active.id; game.swung = false;
             document.getElementById('s-dot').style.display = "none";
-            document.getElementById('outcome').innerText = "";
-            document.getElementById('timing-ui').innerText = "";
             document.getElementById('hit-line').style.width = "0";
             const px = ((active.nx + 1.5) / 3.0) * 160;
             const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
@@ -124,45 +133,57 @@
 
     document.getElementById('tap').addEventListener('touchstart', (e) => {
         e.preventDefault();
-        if (game.swung) return;
-        const active = PITCHES.find(p => Math.abs(video.currentTime - p.t) < 0.45);
-        if (!active) return;
-        game.swung = true;
+        const now = video.currentTime;
+        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.6); // 0.6s window to swing whenever
+        
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
-        const px = ((active.nx + 1.5) / 3.0) * 160;
-        const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
         document.getElementById('s-dot').style.cssText = `left:${ux}px; top:${uy}px; display:block;`;
 
-        const tDiff = video.currentTime - active.t;
-        const yDiff = py - uy;
-        const angle = Math.round(yDiff * 2.3);
-        const exit = Math.round(108 - (Math.abs(tDiff) * 55) - (Math.abs(yDiff) * 0.4));
-        const dist = Math.round((exit ** 2 / 30) * (1 + angle/45));
+        if (active && !game.swung) {
+            game.swung = true;
+            const tDiff = now - active.t;
+            const px = ((active.nx + 1.5) / 3.0) * 160;
+            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
+            const yDiff = py - uy;
 
-        const tUI = document.getElementById('timing-ui');
-        if (Math.abs(tDiff) < 0.07) { tUI.innerText="ON TIME"; tUI.style.color="#00ffcc"; }
-        else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
-        else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
+            const tUI = document.getElementById('timing-ui');
+            if (Math.abs(tDiff) < 0.05) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
+            else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
+            else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
 
-        if (Math.abs(yDiff) < 35) {
-            game.b = 0; game.s = 0; syncCount();
-            document.getElementById('v-ex').innerText = exit + " MPH";
-            document.getElementById('v-an').innerText = angle + "°";
-            document.getElementById('v-di').innerText = Math.max(0, dist) + " FT";
-            if (dist > 385) {
-                game.runs++; document.getElementById('run-val').innerText = game.runs;
-                document.getElementById('outcome').innerText = "HOME RUN";
-                resetBases();
+            // CONTACT CHECK (Show Logic)
+            if (Math.abs(tDiff) < 0.3 && Math.abs(yDiff) < 35) {
+                const exit = Math.round(108 - (Math.abs(tDiff) * 60) - (Math.abs(yDiff) * 0.5));
+                const angle = Math.round(yDiff * 2.5);
+                const dist = Math.round((exit ** 2 / 30) * (1 + angle/45));
+
+                if (Math.abs(tDiff) > 0.22 || Math.abs(yDiff) > 28) {
+                    document.getElementById('outcome').innerText = "FLY OUT";
+                    game.outs++;
+                } else if (dist > 385) {
+                    document.getElementById('outcome').innerText = "HOME RUN";
+                    game.runs++;
+                } else {
+                    document.getElementById('outcome').innerText = "SINGLE";
+                    document.getElementById('b1').classList.add('on');
+                }
+                game.s=0; game.b=0;
+                document.getElementById('v-ex').innerText = exit + " MPH";
+                document.getElementById('v-di').innerText = dist + " FT";
+                const hl = document.getElementById('hit-line');
+                hl.style.width = Math.min(dist/4, 100) + "%";
+                hl.style.transform = `rotate(${-angle}deg)`;
             } else {
-                document.getElementById('outcome').innerText = "IN PLAY";
-                document.getElementById('b1').classList.add('filled');
+                document.getElementById('outcome').innerText = "WHIFF";
+                game.s++;
             }
-            const hl = document.getElementById('hit-line');
-            hl.style.width = Math.min(dist/4, 100) + "%";
-            hl.style.transform = `rotate(${-angle}deg)`;
-        } else { game.s++; syncCount(); document.getElementById('outcome').innerText = "WHIFF"; }
+        } else {
+            document.getElementById('outcome').innerText = "TOO EARLY";
+            game.s++;
+        }
+        updateUI();
     });
 </script>
 </body>
