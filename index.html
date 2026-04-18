@@ -3,77 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast MVP - Final Layout</title>
+    <title>MLB Statcast MVP</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* VIDEO SECTION */
-        #v-sec { width: 100%; position: relative; }
-        video { width: 100%; max-height: 40vh; display: block; }
+        #v-sec { width: 100%; position: relative; background: #000; }
+        video { width: 100%; max-height: 48vh; display: block; object-fit: contain; }
 
-        /* UNDER-VIDEO BROADCAST BAR */
+        /* BROADCAST SCOREBOARD */
         #broadcast-bar { 
-            background: #111; border-bottom: 2px solid #333; padding: 8px 15px; 
-            display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold;
+            background: #111; border-top: 2px solid #333; border-bottom: 2px solid #333; padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; font-weight: bold;
         }
-        .score-box span { color: #00ffcc; margin-left: 5px; }
-        .count-box { letter-spacing: 2px; color: #aaa; }
-        .count-box b { color: #fff; }
-
-        /* MAIN DASHBOARD: Stats Left, Zone Right */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 10px 20px; gap: 20px; }
+        .score-box { font-size: 1rem; color: #aaa; }
+        .score-box b { color: #00ffcc; font-size: 1.2rem; margin-left: 5px; }
+        #count-display { font-family: monospace; font-size: 1.4rem; letter-spacing: 2px; }
         
-        /* LEFT SIDE: REPORTS & VISUALIZER */
-        #reports { display: flex; flex-direction: column; gap: 10px; }
-        #timing-ui { font-size: 0.8rem; font-weight: 800; min-height: 1.2rem; letter-spacing: 1px; }
-        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
-        .stat-group { display: flex; flex-direction: column; gap: 2px; }
-        .stat { font-size: 0.75rem; color: #777; font-family: monospace; }
-        .stat span { color: #fff; font-weight: bold; }
+        /* BASE DIAMOND */
+        .diamond { display: grid; grid-template-columns: repeat(2, 14px); gap: 6px; transform: rotate(45deg); }
+        .base { width: 12px; height: 12px; border: 1px solid #444; background: #222; transition: background 0.3s; }
+        .base.filled { background: #f1c40f; border-color: #fff; box-shadow: 0 0 8px #f1c40f; }
 
-        /* FIELD VISUALIZER (Nested in Reports) */
+        /* DASHBOARD */
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 15px; gap: 15px; }
+        #reports { display: flex; flex-direction: column; gap: 5px; }
+        #timing-ui { font-size: 0.8rem; font-weight: 800; min-height: 1.1rem; }
+        #outcome { font-size: 1.7rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; line-height: 1; }
+        .stat { font-size: 0.7rem; color: #666; font-family: monospace; }
+        .stat b { color: #fff; }
+
         #field { 
-            position: relative; width: 90px; height: 90px; background: #1a1a1a; 
+            position: relative; width: 85px; height: 85px; background: #0a0a0a; 
             border-radius: 0 100% 0 0; transform: rotate(-45deg); 
-            border-left: 2px solid #444; border-bottom: 2px solid #444; overflow: hidden; margin-top: 10px;
+            border-left: 2px solid #333; border-bottom: 2px solid #333; overflow: hidden; margin-top: 8px;
         }
         #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s ease-out; }
 
-        /* RIGHT SIDE: NESTICO BOX (160x200) */
-        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.02); border: 1px solid #222; }
-        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.8); }
+        /* NESTICO ZONE */
+        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.01); }
+        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.5); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
         #p-dot { width: 16px; height: 16px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; z-index: 5; }
-        #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 1px solid #fff; display: none; z-index: 6; }
+        #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
         #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
     </style>
 </head>
 <body>
 
 <div id="v-sec">
-    <video id="v" autoplay muted loop playsinline>
-        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-    </video>
+    <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
 <div id="broadcast-bar">
-    <div class="score-box">NYM <span>0</span> &nbsp; LAD <span>2</span></div>
-    <div class="count-box">COUNT: <b id="b-count">0 - 0</b></div>
-    <div style="color:#777">2 OUT</div>
+    <div class="score-box">RUNS <b id="run-val">0</b></div>
+    <div id="count-display">0-0</div>
+    <div class="diamond">
+        <div class="base" id="b2"></div><div class="base" id="b1"></div>
+        <div class="base" id="b3"></div><div class="base" style="opacity:0"></div>
+    </div>
 </div>
 
 <div id="dashboard">
     <div id="reports">
         <div id="timing-ui"></div>
         <h1 id="outcome"></h1>
-        <div class="stat-group">
-            <div class="stat">EXIT VELO: <span id="s-exit">-</span></div>
-            <div class="stat">LAUNCH ANG: <span id="s-ang">-</span></div>
-            <div class="stat">DISTANCE: <span id="s-dist">-</span></div>
-        </div>
+        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; ANG: <b id="v-an">-</b></div>
+        <div class="stat">DIST: <b id="v-di">-</b></div>
         <div id="field"><div id="hit-line"></div></div>
     </div>
-
     <div id="nestico-box">
         <div id="tap"></div>
         <div id="strike-zone"></div>
@@ -84,79 +80,89 @@
 
 <script>
     const video = document.getElementById('v');
+    // YOUR PRECISE TIMINGS LOADED HERE
     const PITCHES = [
-        { id:1, t:0.85,  nx:-0.75, ny:3.25 },
-        { id:2, t:6.30,  nx:-0.40, ny:3.50 },
-        { id:3, t:10.76, nx:-0.25, ny:2.75 },
-        { id:4, t:15.98, nx:0.15,  ny:2.60 },
-        { id:5, t:21.40, nx:0.20,  ny:2.75 },
-        { id:6, t:27.93, nx:-0.90, ny:1.75 },
-        { id:7, t:34.10, nx:-0.75, ny:3.00 },
-        { id:8, t:40.00, nx:-0.90, ny:2.25 }
+        { id:1, t:0.92,  nx:-0.75, ny:3.25, strike:true },
+        { id:2, t:6.40,  nx:-0.40, ny:3.50, strike:true },
+        { id:3, t:10.86, nx:-0.25, ny:2.75, strike:true },
+        { id:4, t:16.08, nx:0.15,  ny:2.60, strike:true },
+        { id:5, t:21.50, nx:0.20,  ny:2.75, strike:true },
+        { id:6, t:28.03, nx:-0.90, ny:1.75, strike:false },
+        { id:7, t:36.17, nx:-0.75, ny:3.00, strike:true },
+        { id:8, t:41.84, nx:-0.90, ny:2.25, strike:false }
     ];
 
-    let activeId = null;
+    let game = { runs: 0, b: 0, s: 0, activeId: null, swung: false };
+
+    function syncCount() {
+        if (game.s >= 3 || game.b >= 4) { game.b = 0; game.s = 0; resetBases(); }
+        document.getElementById('count-display').innerText = `${game.b}-${game.s}`;
+    }
+    function resetBases() { document.querySelectorAll('.base').forEach(b => b.classList.remove('filled')); }
 
     video.addEventListener('timeupdate', () => {
-        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
-        if (active && activeId !== active.id) {
-            activeId = active.id;
-            // Clear Dashboard
+        const now = video.currentTime;
+        const active = [...PITCHES].reverse().find(p => now >= p.t);
+
+        if (active && game.activeId !== active.id) {
+            if (game.activeId !== null && !game.swung) {
+                const prev = PITCHES.find(p => p.id === game.activeId);
+                prev.strike ? game.s++ : game.b++;
+                syncCount();
+            }
+            game.activeId = active.id; game.swung = false;
             document.getElementById('s-dot').style.display = "none";
             document.getElementById('outcome').innerText = "";
             document.getElementById('timing-ui').innerText = "";
             document.getElementById('hit-line').style.width = "0";
-            document.querySelectorAll('.stat span').forEach(s => s.innerText = "-");
-            
-            // Render Target
             const px = ((active.nx + 1.5) / 3.0) * 160;
             const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
             const pd = document.getElementById('p-dot');
-            pd.style.left = px + 'px'; pd.style.top = py + 'px'; pd.style.opacity = "1";
+            pd.style.left = px+'px'; pd.style.top = py+'px'; pd.style.opacity = "1";
         }
     });
 
     document.getElementById('tap').addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const now = video.currentTime;
-        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.45); // Generous timing window
-        
+        if (game.swung) return;
+        const active = PITCHES.find(p => Math.abs(video.currentTime - p.t) < 0.45);
         if (!active) return;
-
+        game.swung = true;
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
         const px = ((active.nx + 1.5) / 3.0) * 160;
         const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
+        document.getElementById('s-dot').style.cssText = `left:${ux}px; top:${uy}px; display:block;`;
 
-        const sd = document.getElementById('s-dot');
-        sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
-
-        // Advanced Logic
-        const timeDiff = now - active.t;
+        const tDiff = video.currentTime - active.t;
         const yDiff = py - uy;
         const angle = Math.round(yDiff * 2.3);
-        const exit = Math.round(105 - (Math.abs(timeDiff) * 40) - (Math.abs(yDiff) * 0.4));
+        const exit = Math.round(108 - (Math.abs(tDiff) * 55) - (Math.abs(yDiff) * 0.4));
         const dist = Math.round((exit ** 2 / 30) * (1 + angle/45));
 
-        // Timing UI
         const tUI = document.getElementById('timing-ui');
-        if (Math.abs(timeDiff) < 0.06) { tUI.innerText = "ON TIME"; tUI.style.color = "#00ffcc"; }
-        else if (timeDiff < 0) { tUI.innerText = "EARLY"; tUI.style.color = "#ffcc00"; }
-        else { tUI.innerText = "LATE"; tUI.style.color = "#ff4d4d"; }
+        if (Math.abs(tDiff) < 0.07) { tUI.innerText="ON TIME"; tUI.style.color="#00ffcc"; }
+        else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
+        else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
 
         if (Math.abs(yDiff) < 35) {
-            document.getElementById('s-exit').innerText = exit + " MPH";
-            document.getElementById('s-ang').innerText = angle + "°";
-            document.getElementById('s-dist').innerText = Math.max(0, dist) + " FT";
-            document.getElementById('outcome').innerText = dist > 385 ? "HOME RUN" : "IN PLAY";
-            
-            const line = document.getElementById('hit-line');
-            line.style.width = Math.min(dist/4, 100) + "%";
-            line.style.transform = `rotate(${Math.max(-10, -angle)}deg)`;
-        } else {
-            document.getElementById('outcome').innerText = "WHIFF";
-        }
+            game.b = 0; game.s = 0; syncCount();
+            document.getElementById('v-ex').innerText = exit + " MPH";
+            document.getElementById('v-an').innerText = angle + "°";
+            document.getElementById('v-di').innerText = Math.max(0, dist) + " FT";
+            if (dist > 385) {
+                game.runs++; document.getElementById('run-val').innerText = game.runs;
+                document.getElementById('outcome').innerText = "HOME RUN";
+                resetBases();
+            } else {
+                document.getElementById('outcome').innerText = "IN PLAY";
+                document.getElementById('b1').classList.add('filled');
+            }
+            const hl = document.getElementById('hit-line');
+            hl.style.width = Math.min(dist/4, 100) + "%";
+            hl.style.transform = `rotate(${-angle}deg)`;
+        } else { game.s++; syncCount(); document.getElementById('outcome').innerText = "WHIFF"; }
     });
 </script>
 </body>
