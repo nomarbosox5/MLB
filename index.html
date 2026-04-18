@@ -3,39 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Absolute Pitch Sync</title>
+    <title>Statcast v10 - Clean Build</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { margin: 0; background: #f0f0f0; color: #000; font-family: 'Helvetica Neue', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* VIDEO AREA - 42% height exactly */
-        #video-container { width: 100%; height: 42vh; position: relative; overflow: hidden; background: #000; }
+        /* 1. VIDEO CONTAINER - 100% CLEAR */
+        #video-container { width: 100%; height: 45vh; background: #000; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* HUD - Top Left "Fold" */
-        #score-bug { 
-            position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.8); 
-            padding: 5px 12px; border-left: 4px solid #BD3039; z-index: 100; font-weight: 900;
-        }
-
-        /* STATCAST DATA - Bottom Right Overlay */
-        #stat-data { 
-            position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.85); 
-            border: 1px solid #444; padding: 10px; width: 140px; display: none; flex-direction: column; z-index: 100;
-        }
-        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 3px 0; }
-        .label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; }
-        .val { font-size: 0.9rem; font-weight: 900; color: #efb21e; }
-
-        /* THE GAME HIT BOX */
-        #interaction { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #050505; }
-        #nestico-box { position: relative; width: 180px; height: 230px; border: 1px solid #222; background: rgba(255,255,255,0.02); }
+        /* 2. DATA TRAY - BELOW THE VIDEO */
+        #ui-tray { flex-grow: 1; background: #fff; display: flex; flex-direction: column; border-top: 3px solid #333; }
         
-        /* DOTS */
+        #stats-header { display: flex; justify-content: space-around; padding: 12px; background: #1a1a1a; color: #fff; }
+        .stat-box { text-align: center; }
+        .stat-box span { display: block; font-size: 0.65rem; text-transform: uppercase; color: #aaa; }
+        .stat-box b { font-size: 1.4rem; color: #efb21e; }
+        #r-val { color: #fff; }
+
+        /* 3. GAME AREA */
+        #game-layout { display: flex; flex-grow: 1; align-items: center; justify-content: center; padding: 10px; gap: 20px; }
+        
+        #nestico-box { 
+            position: relative; width: 180px; height: 230px; 
+            border: 2px solid #000; background: #fff;
+            background-image: linear-gradient(#eee 1px, transparent 1px), linear-gradient(90deg, #eee 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* DOTS & RADIUS */
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #target { width: 14px; height: 14px; background: #fff; opacity: 0; box-shadow: 0 0 10px #fff; }
-        #swing { width: 26px; height: 26px; border: 2px solid #fff; display: none; background: rgba(255,0,0,0.5); }
+        #target { 
+            width: 16px; height: 16px; /* 8px radius ball */
+            background: rgba(0, 0, 255, 0.15); border: 2px solid blue; opacity: 0; 
+        }
+        #swing { 
+            width: 22px; height: 22px; /* 11px radius bat */
+            background: rgba(255, 0, 0, 0.4); border: 2px solid red; display: none; 
+        }
         
-        #tap-surface { position: absolute; inset: 0; z-index: 10; touch-action: none; }
+        #tap-surface { position: absolute; inset: 0; z-index: 100; touch-action: none; }
+
+        #feedback-msg { font-weight: 900; font-size: 1.2rem; text-align: center; padding: 10px; color: #333; font-style: italic; }
     </style>
 </head>
 <body>
@@ -44,61 +52,63 @@
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
-    
-    <div id="score-bug">BOS <span id="r-val">0</span></div>
-
-    <div id="stat-data">
-        <div class="stat-row"><span class="label">Result</span><span class="val" id="d-res">--</span></div>
-        <div class="stat-row"><span class="label">Exit Velo</span><span class="val" id="d-ev">0</span></div>
-        <div class="stat-row"><span class="label">Distance</span><span class="val" id="d-dist">0</span></div>
-    </div>
 </div>
 
-<div id="interaction">
-    <div id="nestico-box">
-        <div id="tap-surface"></div>
-        <div id="target" class="dot"></div>
-        <div id="swing" class="dot"></div>
+<div id="ui-tray">
+    <div id="stats-header">
+        <div class="stat-box"><span>Runs</span><b id="r-val">0</b></div>
+        <div class="stat-box"><span>Exit Velo</span><b id="ev-val">0.0</b></div>
+        <div class="stat-box"><span>Distance</span><b id="dist-val">0</b></div>
+    </div>
+    
+    <div id="feedback-msg">READY TO SWING</div>
+
+    <div id="game-layout">
+        <div id="nestico-box">
+            <div id="tap-surface"></div>
+            <div id="target" class="dot"></div>
+            <div id="swing" class="dot"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('v');
+    const v = document.getElementById('v');
     
-    // THESE LOCATIONS NEVER CHANGE - HARD CODED COORDINATES
+    /* WIDENED COORDINATES (-0.8 to 0.8) */
     const PITCHES = [
-        {t: 0.92,  x: 45,  y: 40}, 
-        {t: 6.40,  x: 65,  y: 25}, 
-        {t: 10.86, x: 75,  y: 70}, 
-        {t: 16.08, x: 95,  y: 85}, 
-        {t: 21.50, x: 100, y: 70}, 
-        {t: 28.03, x: 20,  y: 160}, 
-        {t: 36.17, x: 45,  y: 60}, 
-        {t: 41.84, x: 25,  y: 125}
+        {t: 0.92,  x: 5,   y: 40},  
+        {t: 6.40,  x: 45,  y: 25},  
+        {t: 10.86, x: 62,  y: 70},  
+        {t: 16.08, x: 107, y: 85},  
+        {t: 21.50, x: 112, y: 70},  
+        {t: 28.03, x: -12, y: 160}, 
+        {t: 36.17, x: 5,   y: 60},  
+        {t: 41.84, x: -12, y: 125}  
     ];
 
-    let g = { r:0, lastT: 0, activeIdx: -1, swung: false };
+    let g = { runs: 0, lastT: 0, activeIdx: -1, swung: false };
 
-    video.addEventListener('timeupdate', () => {
-        const now = video.currentTime;
-        // Loop Reset
-        if (now < g.lastT) { g.activeIdx = -1; g.swung = false; document.getElementById('stat-data').style.display='none'; }
+    v.addEventListener('timeupdate', () => {
+        const now = v.currentTime;
+        if (now < g.lastT) { 
+            g.activeIdx = -1; g.swung = false; 
+            document.getElementById('feedback-msg').innerText = "NEW INNING";
+        }
         g.lastT = now;
 
         let idx = -1;
-        PITCHES.forEach((p, i) => { if (now >= p.t) idx = i; });
+        PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.5) idx = i; });
 
         if (idx !== g.activeIdx) {
-            g.activeIdx = idx;
-            g.swung = false;
+            g.activeIdx = idx; g.swung = false;
             document.getElementById('swing').style.display = 'none';
+            const td = document.getElementById('target');
             if (idx !== -1) {
-                const p = PITCHES[idx];
-                const td = document.getElementById('target');
-                td.style.left = p.x + 'px'; 
-                td.style.top = p.y + 'px'; 
+                td.style.left = PITCHES[idx].x + 'px';
+                td.style.top = PITCHES[idx].y + 'px';
                 td.style.opacity = '1';
-            }
+            } else { td.style.opacity = '0'; }
         }
     });
 
@@ -112,29 +122,41 @@
         const uy = e.touches[0].clientY - rect.top;
         
         const sd = document.getElementById('swing');
-        sd.style.left = ux + 'px'; 
-        sd.style.top = uy + 'px'; 
-        sd.style.display = 'block';
+        sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
 
         const p = PITCHES[g.activeIdx];
-        const err = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
+        const distErr = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
 
-        if (err < 45) {
-            const ev = Math.round(114 - (err * 0.8));
-            const la = Math.round((p.y - uy) * 1.5);
-            const dist = Math.round((ev * ev / 30) * (1 + la/90));
+        // PHYSICS CHECK (Ball 8px + Bat 11px = 19px for direct contact)
+        if (distErr < 38) { // Generous hit window
+            let ev = 114 - (distErr * 0.85);
+            const la = Math.round((p.y - uy) * 1.6);
+            
+            // Sweet Spot Bonus (within 5px)
+            if (distErr < 5) {
+                ev += 5;
+                document.getElementById('feedback-msg').innerText = "SQUARED UP!";
+                document.getElementById('feedback-msg').style.color = "#efb21e";
+            } else {
+                document.getElementById('feedback-msg').innerText = la > 20 ? "FLY BALL" : "GROUND BALL";
+                document.getElementById('feedback-msg').style.color = "#333";
+            }
 
-            document.getElementById('d-ev').innerText = ev + " MPH";
-            document.getElementById('d-dist').innerText = dist + " FT";
-            document.getElementById('d-res').innerText = (la > 25 && la < 35) ? "HOME RUN" : "HIT";
-            document.getElementById('stat-data').style.display = 'flex';
+            const finalEv = Math.round(ev);
+            const distance = Math.round((finalEv * finalEv / 29) * (1 + la/90));
 
-            if (la > 25 && la < 35 && ev > 102) {
-                g.r++; document.getElementById('r-val').innerText = g.r;
+            document.getElementById('ev-val').innerText = finalEv + " MPH";
+            document.getElementById('dist-val').innerText = distance + " FT";
+            
+            // RUN RESULT RULE
+            if (la >= 22 && la <= 38 && finalEv > 102) {
+                g.runs++;
+                document.getElementById('r-val').innerText = g.runs;
+                document.getElementById('feedback-msg').innerText = "⚾ HOME RUN!";
             }
         } else {
-            document.getElementById('d-res').innerText = "WHIFF";
-            document.getElementById('stat-data').style.display = 'flex';
+            document.getElementById('feedback-msg').innerText = "WHIFF";
+            document.getElementById('feedback-msg').style.color = "red";
         }
     });
 </script>
