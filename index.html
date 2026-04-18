@@ -5,108 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cronin Statcast Pro</title>
     <style>
-        :root { --stat-gold: #f1c40f; --aws-blue: #00a1e0; --bg-dark: #0a0a0a; --glass-light: rgba(255, 255, 255, 0.05); }
+        :root { --gold: #f1c40f; --aws-blue: #00a1e0; --bg: #050505; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', -apple-system, sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
         
-        /* Header / Score Ticker */
-        header { 
-            height: 44px; background: #000; display: flex; align-items: center; justify-content: space-between; 
-            padding: 0 15px; border-bottom: 1px solid #222; font-size: 12px; font-weight: 800;
-        }
-        .brand { color: var(--stat-gold); letter-spacing: 2px; }
-        .ticker { display: flex; gap: 15px; align-items: center; }
-        .dots { display: flex; gap: 4px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #444; }
-        .dot.active-b { background: var(--aws-blue); box-shadow: 0 0 5px var(--aws-blue); }
-        .dot.active-s { background: var(--stat-gold); box-shadow: 0 0 5px var(--stat-gold); }
-        .dot.active-o { background: #ff4757; box-shadow: 0 0 5px #ff4757; }
+        /* 30% Left/Right Side Crop - Full Vertical */
+        #v-frame { width: 100%; height: 50vh; overflow: hidden; position: relative; background: #000; border-bottom: 2px solid #222; }
+        video { width: 160%; height: 100%; object-fit: cover; margin-left: -30%; }
 
-        /* Focused Video */
-        #v-frame { width: 100%; aspect-ratio: 1.4; overflow: hidden; position: relative; background: #000; }
-        video { width: 180%; height: 100%; object-fit: cover; margin-left: -40%; }
-
-        /* Main Data Deck */
+        /* Bottom Control Deck */
         #deck { 
-            flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; 
-            background: var(--bg-dark); padding: 12px; gap: 12px;
+            height: 50vh; display: grid; grid-template-columns: 1fr 1.2fr; 
+            background: var(--bg); padding: 15px; gap: 15px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Left Side: AWS Style Metrics */
-        .stat-col { display: flex; flex-direction: column; gap: 8px; }
-        .stat-card { 
-            background: var(--glass-light); border: 1px solid #222; 
-            padding: 8px 12px; border-left: 3px solid var(--aws-blue);
-        }
-        .stat-label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-val { font-size: 18px; font-weight: 900; margin-top: 2px; }
+        /* Branding & Summary (Left Bottom) */
+        .info-side { display: flex; flex-direction: column; justify-content: space-between; }
+        .branding { font-weight: 900; letter-spacing: 3px; color: var(--gold); font-size: 14px; }
         
-        /* 3D Field Trajectory Diagram */
-        #trajectory-box { 
-            flex-grow: 1; border: 1px solid #222; border-radius: 4px; position: relative;
-            background: linear-gradient(to top, #0f1a0f, #000); overflow: hidden;
-        }
-        .field-lines { position: absolute; bottom: 0; left: 50%; width: 100px; height: 100px; border: 1px solid #222; transform: translateX(-50%) rotateX(60deg); }
-        #ball-arc { 
-            position: absolute; bottom: 10px; left: 50%; width: 2px; 
-            background: var(--stat-gold); transform-origin: bottom; opacity: 0;
-            transition: height 0.5s ease-out;
+        /* The "Everything" HUD (Right Bottom) */
+        .hud-side { 
+            display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
         }
 
-        /* Right Side: Strike Zone */
-        #zone-box { display: flex; justify-content: center; align-items: center; }
-        #strike-zone { 
-            width: 150px; height: 200px; border: 1px solid rgba(255,255,255,0.2); 
-            position: relative; background: rgba(255,255,255,0.02);
+        /* Technical Data Cards */
+        #stats-overlay { width: 100%; opacity: 0; transition: 0.3s; text-align: right; }
+        .metric-row { border-right: 4px solid var(--aws-blue); background: rgba(255,255,255,0.05); padding: 5px 12px; margin-bottom: 5px; }
+        .m-label { font-size: 9px; color: #888; text-transform: uppercase; }
+        .m-val { font-size: 18px; font-weight: 900; color: #fff; }
+
+        /* Diamond UI with Runners */
+        .diamond-wrap { position: relative; width: 80px; height: 80px; margin-top: 5px; }
+        .base { position: absolute; width: 12px; height: 12px; background: #222; transform: rotate(45deg); border: 1px solid #444; transition: 0.3s; }
+        .runner { background: var(--gold) !important; box-shadow: 0 0 10px var(--gold); border-color: #fff; }
+        #b1 { top: 34px; right: 0; } #b2 { top: 0; left: 34px; } #b3 { top: 34px; left: 0; }
+        #home { bottom: 0; left: 34px; clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%); background: #eee; transform: none; width: 14px; height: 14px; }
+
+        /* Strike Zone */
+        #sz { 
+            width: 130px; height: 170px; border: 1px solid rgba(255,255,255,0.2); 
+            position: relative; background: rgba(255,255,255,0.03); touch-action: none;
         }
-        .grid { position: absolute; background: rgba(255,255,255,0.1); pointer-events: none; }
-        
-        /* Hit Markers */
-        .hit-node { position: absolute; width: 20px; height: 20px; background: #ff4757; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); box-shadow: 0 0 10px #ff4757; }
-        .swing-ring { position: absolute; width: 40px; height: 40px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.3; }
+        .grid { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
+        .p-node { position: absolute; width: 22px; height: 22px; background: #ff4757; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); font-weight: 900; font-size: 11px; box-shadow: 0 0 15px rgba(255,71,87,0.5); }
     </style>
 </head>
 <body>
-
-<header>
-    <div class="brand">CRONIN STATCAST</div>
-    <div class="ticker">
-        <div style="display:flex; gap:10px">R <span id="r-val">0</span></div>
-        <div class="dots" id="b-dots"></div>
-        <div class="dots" id="s-dots"></div>
-        <div class="dots" id="o-dots"></div>
-    </div>
-</header>
 
 <div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
 <div id="deck">
-    <div class="stat-col">
-        <div id="live-stats" style="opacity: 0; transition: 0.3s;">
-            <div class="stat-card">
-                <div class="stat-label">Exit Velocity</div>
-                <div class="stat-val" id="exit-v" style="color:var(--stat-gold)">0.0 MPH</div>
-            </div>
-            <div class="stat-card" style="margin-top:8px">
-                <div class="stat-label">Launch Angle / Dist</div>
-                <div class="stat-val" id="dist-v">0 FT</div>
-            </div>
-        </div>
-        
-        <div id="trajectory-box">
-            <div class="field-lines"></div>
-            <div id="ball-arc"></div>
-            <div style="position:absolute; top:10px; left:10px; font-size:8px; color:#444;">3D TRAJECTORY MODEL</div>
-        </div>
+    <div class="info-side">
+        <div class="branding">CRONIN BASEBALL</div>
+        <div style="font-size: 12px; color: #555;">GHOST RUNNER SYSTEM v2.1</div>
+        <div class="m-val" style="font-size: 32px;">RUNS: <span id="r-total">0</span></div>
     </div>
 
-    <div id="zone-box">
-        <div id="strike-zone">
+    <div class="hud-side">
+        <div id="stats-overlay">
+            <div class="metric-row"><div class="m-label">Exit Velocity</div><div class="m-val" id="ev" style="color:var(--gold)">0 MPH</div></div>
+            <div class="metric-row"><div class="m-label">Distance</div><div class="m-val" id="dist">0 FT</div></div>
+            <div class="metric-row" id="hit-type" style="border-right-color: var(--gold);"><div class="m-label">Result</div><div class="m-val">---</div></div>
+        </div>
+
+        <div class="diamond-wrap">
+            <div id="b1" class="base"></div>
+            <div id="b2" class="base"></div>
+            <div id="b3" class="base"></div>
+            <div id="home"></div>
+        </div>
+
+        <div id="sz">
             <div class="grid" style="width:1px; height:100%; left:33%"></div>
             <div class="grid" style="width:1px; height:100%; left:66%"></div>
             <div class="grid" style="height:1px; width:100%; top:33%"></div>
@@ -117,9 +91,8 @@
 
 <script>
     const v = document.getElementById('v');
-    const sz = document.getElementById('strike-zone');
-    const arc = document.getElementById('ball-arc');
-    const stats = document.getElementById('live-stats');
+    const sz = document.getElementById('sz');
+    const stats = document.getElementById('stats-overlay');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -128,79 +101,81 @@
         { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
-    let game = { r: 0, b: 0, s: 0, o: 0 };
-    let locked = false;
+    let game = { runs: 0, bases: [false, false, false], locked: false };
 
-    function renderHUD() {
-        document.getElementById('r-val').innerText = game.r;
-        const set = (id, count, max, cls) => {
-            let h = ''; for(let i=0; i<max; i++) h += `<div class="dot ${i<count?cls:''}"></div>`;
-            document.getElementById(id).innerHTML = h;
-        };
-        set('b-dots', game.b, 3, 'active-b');
-        set('s-dots', game.s, 2, 'active-s');
-        set('o-dots', game.o, 2, 'active-o');
+    function updateRunners() {
+        document.getElementById('b1').className = `base ${game.bases[0] ? 'runner' : ''}`;
+        document.getElementById('b2').className = `base ${game.bases[1] ? 'runner' : ''}`;
+        document.getElementById('b3').className = `base ${game.bases[2] ? 'runner' : ''}`;
+        document.getElementById('r-total').innerText = game.runs;
     }
 
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        if(locked) return;
+        if(game.locked) return;
         const r = sz.getBoundingClientRect();
         const t = e.touches[0];
-        handleSwing(t.clientX - r.left, t.clientY - r.top);
+        doSwing(t.clientX - r.left, t.clientY - r.top);
     });
 
-    function handleSwing(tx, ty) {
-        locked = true;
+    function doSwing(tx, ty) {
+        game.locked = true;
         const now = v.currentTime;
-        const p = pitches.find(p => Math.abs(now - p.t) < 0.6);
+        const p = pitches.find(p => Math.abs(now - p.t) < 0.65);
 
-        sz.querySelectorAll('.hit-node, .swing-ring').forEach(n => n.remove());
-        const ring = document.createElement('div'); ring.className = 'swing-ring';
-        ring.style.left = tx+'px'; ring.style.top = ty+'px'; sz.appendChild(ring);
+        sz.querySelectorAll('.p-node').forEach(n => n.remove());
 
         if(p) {
-            const px = ((p.x + 0.75) / 1.5) * 150;
-            const py = ((1.0 - p.y) / 2.0) * 200;
+            const px = ((p.x + 0.75) / 1.5) * 130;
+            const py = ((1.0 - p.y) / 2.0) * 170;
             const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
             
-            const node = document.createElement('div'); node.className = 'hit-node'; node.innerText = '1';
+            const node = document.createElement('div'); node.className = 'p-node'; node.innerText = '1';
             node.style.left = px+'px'; node.style.top = py+'px'; sz.appendChild(node);
 
-            if(d < 35) {
-                const velo = Math.floor(110 - d);
+            if(d < 38) {
+                const velo = Math.floor(115 - d);
                 const ft = Math.floor(velo * 3.8);
-                showStats(velo, ft, tx-px);
-                if(ft > 250) game.r++;
-            } else { game.s++; }
-        } else { game.s++; }
-
-        if(game.s >= 3) { game.s = 0; game.o++; }
-        if(game.o >= 3) { game = { r:0, b:0, s:0, o:0 }; }
-        renderHUD();
+                handleHit(ft, velo);
+            }
+        }
     }
 
-    function showStats(v, f, spray) {
+    function handleHit(ft, velo) {
         stats.style.opacity = 1;
-        document.getElementById('exit-v').innerText = v + ".4 MPH";
-        document.getElementById('dist-v').innerText = f + " FT";
+        document.getElementById('ev').innerText = velo + ".2 MPH";
+        document.getElementById('dist').innerText = ft + " FT";
         
-        arc.style.opacity = 1;
-        arc.style.height = (f/4) + 'px';
-        arc.style.transform = `translateX(-50%) rotate(${spray*2}deg) skewY(-20deg)`;
+        let bases = 0;
+        let label = "FLY OUT";
+        
+        if(ft >= 400) { bases = 4; label = "HOME RUN"; }
+        else if(ft >= 350) { bases = 3; label = "TRIPLE"; }
+        else if(ft >= 300) { bases = 2; label = "DOUBLE"; }
+        else if(ft >= 200) { bases = 1; label = "SINGLE"; }
+
+        document.querySelector('#hit-type .m-val').innerText = label;
+
+        // Move runners
+        for(let i=0; i < bases; i++) {
+            if(game.bases[2]) game.runs++;
+            game.bases[2] = game.bases[1];
+            game.bases[1] = game.bases[0];
+            game.bases[0] = (i === 0 && bases < 4);
+        }
+        updateRunners();
     }
 
     setInterval(() => {
         const now = v.currentTime;
-        if (now < 0.5 || pitches.some(p => p.t > now && p.t - now < 0.6)) {
-            locked = false;
+        if (now < 0.5 || pitches.some(p => p.t > now && p.t - now < 0.5)) {
+            game.locked = false;
             stats.style.opacity = 0;
-            arc.style.opacity = 0;
-            if(now < 0.5) sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33%"></div><div class="grid" style="width:1px; height:100%; left:66%"></div><div class="grid" style="height:1px; width:100%; top:33%"></div><div class="grid" style="height:1px; width:100%; top:66%"></div>';
+            if(now < 0.3) sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33%"></div><div class="grid" style="width:1px; height:100%; left:66%"></div><div class="grid" style="height:1px; width:100%; top:33%"></div><div class="grid" style="height:1px; width:100%; top:66%"></div>';
         }
     }, 100);
 
-    renderHUD();
+    updateRunners();
 </script>
 </body>
 </html>
