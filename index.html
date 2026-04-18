@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>METAVERSE STATCAST MVP</title>
+    <title>METAVERSE STATCAST • MVP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
@@ -18,27 +18,32 @@
         .video-container {
             position: relative;
             box-shadow: 0 0 40px #22d3ee;
-            border: 6px solid #111;
         }
         
-        .statcast-bottom {
-            background: rgba(0, 0, 0, 0.95);
-            border-top: 4px solid #22d3ee;
+        .strike-zone-box {
+            width: 128px;
+            height: 160px;
+            border: 3px solid #fff;
+            position: relative;
+            background: #0a0a0a;
         }
         
         .gray-bar {
-            background: linear-gradient(#666, #999);
+            background: linear-gradient(#555, #aaa);
             color: black;
-            font-weight: bold;
+            font-weight: 700;
         }
         
-        .yellow-text { color: #facc15; }
+        .yellow-text {
+            color: #facc15;
+            text-shadow: 0 0 10px #facc15;
+        }
     </style>
 </head>
-<body class="bg-black text-white">
+<body>
 
 <div class="flex flex-col h-screen">
-    <!-- Video Area -->
+    <!-- VIDEO WITH GRID -->
     <div class="flex-1 relative video-container">
         <video id="pitch-video" 
                class="w-full h-full object-cover"
@@ -46,61 +51,16 @@
                src="ScreenRecording_04-17-2026 18-27-36_1.mp4">
         </video>
         
-        <!-- 3x3 transparent grid overlay (kept subtle) -->
-        <div class="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-30 border-2 border-cyan-400">
-            <div class="border-r border-b border-cyan-400"></div><div class="border-r border-b border-cyan-400"></div><div class="border-b border-cyan-400"></div>
-            <div class="border-r border-b border-cyan-400 flex items-center justify-center text-4xl font-bold text-red-500">1</div><div class="border-r border-b border-cyan-400"></div><div class="border-b border-cyan-400"></div>
-            <div class="border-r border-b border-cyan-400"></div><div class="border-r border-b border-cyan-400"></div><div class="border-b border-cyan-400"></div>
+        <!-- Light blue 3x3 grid overlay like your screenshot -->
+        <div class="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none border border-cyan-400/70">
+            <div class="border-r border-b border-cyan-400/50"></div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
+            <div class="border-r border-b border-cyan-400/50 flex items-center justify-center text-6xl font-bold text-red-500/80">1</div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
+            <div class="border-r border-b border-cyan-400/50"></div><div class="border-r border-b border-cyan-400/50"></div><div class="border-b border-cyan-400/50"></div>
         </div>
     </div>
 
-    <!-- Bottom Statcast Panel - Exact MVP Style -->
-    <div class="statcast-bottom grid grid-cols-2 gap-0 text-sm">
+    <!-- BOTTOM STATCAST PANEL -->
+    <div class="bg-black border-t-4 border-cyan-400 grid grid-cols-2">
         
-        <!-- LEFT COLUMN -->
-        <div class="p-6 border-r border-cyan-400/30">
-            <div class="flex justify-between items-end mb-6">
-                <div>
-                    <div class="text-cyan-400 text-xs tracking-widest">EXIT VELO</div>
-                    <div id="exit-velo" class="text-6xl font-bold yellow-text">0.0</div>
-                    <div class="text-xs text-gray-400 -mt-1">MPH</div>
-                </div>
-                
-                <div class="text-right">
-                    <div class="text-cyan-400 text-xs tracking-widest">SWING TIMING</div>
-                    <div id="timing" class="gray-bar text-xl px-8 py-1 inline-block">GOOD</div>
-                </div>
-            </div>
-            
-            <div>
-                <div class="text-cyan-400 text-xs tracking-widest mb-1">CONTACT RESULT</div>
-                <div id="contact-result" class="gray-bar text-2xl px-8 py-2 inline-block">SQUARED UP</div>
-            </div>
-            
-            <div class="mt-6">
-                <div id="hit-speed" class="text-5xl font-bold yellow-text">103</div>
-                <div class="text-xs tracking-widest text-gray-400">HIT SPEED MPH</div>
-            </div>
-        </div>
-        
-        <!-- RIGHT COLUMN - Count + Zone -->
-        <div class="p-6 flex flex-col">
-            <!-- Count -->
-            <div class="flex gap-8">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-white text-xl font-bold">B</span>
-                        <div id="balls" class="flex gap-2"></div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-3">
-                        <span class="text-white text-xl font-bold">S</span>
-                        <div id="strikes" class="flex gap-2"></div>
-                    </div>
-                    <div class="flex items-center gap-2 mt-3">
-                        <span class="text-white text-xl font-bold">O</span>
-                        <div id="outs" class="flex gap-2"></div>
-                    </div>
-                </div>
-                
-                <!-- Small strike zone with moving dot -->
-                <div class="ml-auto">
+        <!-- LEFT SIDE -->
+        <div class="p-6 space-y-6
