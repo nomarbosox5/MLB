@@ -3,77 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Statcast Elite v2</title>
+    <title>Statcast Pro Overlay</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@400;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;900&display=swap');
         
         :root { 
-            --gold: #fcc419; --bg: #000; --border: #222; 
-            --safe-top: env(safe-area-inset-top);
+            --gold: #fcc419; --red: #ff3b30; --glass: rgba(0, 0, 0, 0.7);
             --safe-bottom: env(safe-area-inset-bottom);
+            --safe-right: env(safe-area-inset-right);
         }
 
         html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; margin: 0; background: #000; }
-        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
 
-        body { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; color: #fff; }
-
-        /* VIDEO AREA */
-        #v-area { height: 45vh; margin-top: var(--safe-top); position: relative; border-bottom: 1px solid var(--border); }
+        /* FULL SCREEN VIDEO */
+        #video-container { width: 100vw; height: 100vh; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* DASHBOARD */
-        #dashboard { flex-grow: 1; display: flex; padding-bottom: var(--safe-bottom); }
-
-        /* LEFT PANEL */
-        #left-panel { width: 40%; padding: 25px 15px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 25px; }
-        .stat { border-left: 2px solid #1a1a1a; padding-left: 12px; }
-        .label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
-        .val { font-family: 'JetBrains Mono'; font-size: 16px; color: #fff; }
-        .hero { color: var(--gold); font-size: 26px; font-weight: 900; }
-
-        /* RIGHT PANEL - THE GRID */
-        #right-panel { width: 60%; display: flex; align-items: center; justify-content: center; background: #030303; }
-        
-        #grid { 
-            width: 180px; height: 240px; background: #080808; border: 2px solid #333; position: relative;
+        /* PROFESSIONAL OVERLAY HUD */
+        #hud {
+            position: absolute;
+            bottom: calc(20px + var(--safe-bottom));
+            right: calc(20px + var(--safe-right));
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+            z-index: 100;
         }
-        
-        /* STRIKE ZONE (0.30 - 0.70 X | 0.35 - 0.75 Y) */
-        /* Mapped to: 54px - 126px Wide | 60px - 156px High */
+
+        /* ANALYTICS BOX */
+        #stats-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--gold);
+            padding: 12px 20px;
+            width: 180px;
+            border-radius: 4px;
+        }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .label { font-family: 'Inter'; font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .val { font-family: 'Orbitron'; font-size: 14px; color: #fff; }
+        #res { font-size: 18px; font-weight: 900; }
+
+        /* THE STRIKE ZONE GRID (180x240 Normalized) */
+        #grid-container {
+            width: 180px;
+            height: 240px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* THE STRINGS (Strike Zone: 0.30-0.70 X | 0.35-0.75 Y) */
         #strike-zone {
             position: absolute;
-            left: 54px; top: 60px; width: 72px; height: 96px; 
-            border: 2px solid #fff;
-            box-shadow: 0 0 15px rgba(255,255,255,0.1);
-            pointer-events: none;
+            left: 54px; top: 60px; /* 30% and 25% from top */
+            width: 72px; height: 96px; /* 40% width and 40% height */
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
         }
 
-        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
-        #pitch { width: 12px; height: 12px; background: #ff3b30; box-shadow: 0 0 10px rgba(255,59,48,0.5); z-index: 10; }
-        #swing { width: 34px; height: 34px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.2); z-index: 11; }
+        /* VISUAL MARKERS */
+        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        #pitch-dot { width: 14px; height: 14px; background: var(--red); box-shadow: 0 0 15px var(--red); z-index: 5; }
+        #swing-dot { width: 30px; height: 30px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.2); z-index: 6; }
+        
     </style>
 </head>
 <body>
 
-<div id="v-area">
-    <video id="v" playsinline autoplay muted loop preload="auto">
+<div id="video-container">
+    <video id="v" playsinline autoplay muted loop>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
-</div>
 
-<div id="dashboard">
-    <div id="left-panel">
-        <div class="stat"><div class="label">Exit Velocity</div><div id="ev" class="val hero">0.0 MPH</div></div>
-        <div class="stat"><div class="label">Timing</div><div id="time" class="val">---</div></div>
-        <div class="stat"><div class="label">Zone Call</div><div id="res" class="val">---</div></div>
-    </div>
+    <div id="hud">
+        <div id="stats-card">
+            <div class="stat-row"><div class="label">Exit Velo</div><div id="ev" class="val">--</div></div>
+            <div class="stat-row"><div class="label">Timing</div><div id="timing" class="val">--</div></div>
+            <div class="stat-row" style="margin-top:8px;"><div id="res" class="val">WAITING...</div></div>
+        </div>
 
-    <div id="right-panel">
-        <div id="grid" onpointerdown="handleTap(event)">
+        <div id="grid-container" onpointerdown="processSwing(event)">
             <div id="strike-zone"></div>
-            <div id="pitch" class="marker"></div>
-            <div id="swing" class="marker"></div>
+            <div id="pitch-dot" class="marker"></div>
+            <div id="swing-dot" class="marker"></div>
         </div>
     </div>
 </div>
@@ -81,7 +98,7 @@
 <script>
     const v = document.getElementById('v');
     
-    // THE BIBLE: Normalized 0-1 Mapping from your images
+    // THE BIBLE: Normalized 0-1 (0,0 is Bottom-Left)
     const PITCHES = [
         { t: 0.92,  x: 0.20, y: 0.55 }, { t: 6.40,  x: 0.25, y: 0.62 }, 
         { t: 10.86, x: 0.42, y: 0.52 }, { t: 16.08, x: 0.42, y: 0.50 },
@@ -89,70 +106,83 @@
         { t: 36.17, x: 0.22, y: 0.52 }, { t: 41.84, x: 0.20, y: 0.50 }
     ];
 
-    let state = { currentIdx: -1, lastProcessedIdx: -1 };
+    let currentPitchIdx = -1;
+    let hasSwungAtCurrent = false;
 
-    // BROWSER PIXEL MAPPING (180x240)
-    // X: input * 180
-    // Y: (1 - input) * 240 (to flip the bottom-up coordinate to top-down pixel)
-    const mapX = (x) => x * 180;
-    const mapY = (y) => (1 - y) * 240;
+    // Translation to 180x240 Grid
+    const getX = (val) => val * 180;
+    const getY = (val) => (1 - val) * 240; // Inverting Y for browser top-down logic
 
     v.ontimeupdate = () => {
         const now = v.currentTime;
-        let activeIdx = -1;
+        let active = -1;
 
         for (let i = 0; i < PITCHES.length; i++) {
             const p = PITCHES[i];
-            const nextP = PITCHES[i + 1];
-            const resetTime = nextP ? p.t + (nextP.t - p.t) / 2 : p.t + 2.0;
+            const next = PITCHES[i+1];
+            // MIDPOINT RESET LOGIC
+            const reset = next ? p.t + (next.t - p.t)/2 : p.t + 2;
 
-            if (now >= p.t - 0.4 && now < p.t + 0.4) activeIdx = i;
-
-            if (now >= p.t - 0.1 && now < resetTime) {
-                const pDot = document.getElementById('pitch');
-                pDot.style.left = mapX(p.x) + 'px';
-                pDot.style.top = mapY(p.y) + 'px';
-                pDot.style.opacity = 1;
+            if (now >= p.t - 0.3 && now < reset) {
+                active = i;
+                showPitch(p);
             }
         }
 
-        if (activeIdx !== state.currentIdx) {
-            state.currentIdx = activeIdx;
-            if (activeIdx !== -1) state.lastProcessedIdx = -1; 
+        if (active === -1) resetUI();
+        if (active !== currentPitchIdx) {
+            currentPitchIdx = active;
+            hasSwungAtCurrent = false;
         }
     };
 
-    function handleTap(e) {
-        const rect = document.getElementById('grid').getBoundingClientRect();
+    function showPitch(p) {
+        const dot = document.getElementById('pitch-dot');
+        dot.style.left = getX(p.x) + 'px';
+        dot.style.top = getY(p.y) + 'px';
+        dot.style.opacity = 1;
+
+        // Passive Strike Call
+        const isStrike = (p.x >= 0.3 && p.x <= 0.7 && p.y >= 0.35 && p.y <= 0.75);
+        const resLabel = document.getElementById('res');
+        resLabel.innerText = isStrike ? "STRIKE" : "BALL";
+        resLabel.style.color = isStrike ? "var(--gold)" : "#fff";
+    }
+
+    function resetUI() {
+        document.getElementById('pitch-dot').style.opacity = 0;
+        document.getElementById('swing-dot').style.opacity = 0;
+        document.getElementById('res').innerText = "TRACKING...";
+        document.getElementById('res').style.color = "#555";
+        document.getElementById('ev').innerText = "--";
+        document.getElementById('timing').innerText = "--";
+    }
+
+    function processSwing(e) {
+        if (currentPitchIdx === -1 || hasSwungAtCurrent) return;
+
+        const rect = document.getElementById('grid-container').getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
 
-        const sDot = document.getElementById('swing');
+        const sDot = document.getElementById('swing-dot');
         sDot.style.left = sx + 'px'; sDot.style.top = sy + 'px'; sDot.style.opacity = 1;
 
-        if (state.currentIdx !== -1 && state.lastProcessedIdx === -1) {
-            const p = PITCHES[state.currentIdx];
-            const px = mapX(p.x);
-            const py = mapY(p.y);
-            
-            const dist = Math.sqrt(Math.pow(sx - px, 2) + Math.pow(sy - py, 2));
+        const p = PITCHES[currentPitchIdx];
+        const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
 
-            // STRIKE LOGIC: 0.30 to 0.70 X | 0.35 to 0.75 Y
-            const isStrike = (p.x >= 0.30 && p.x <= 0.70 && p.y >= 0.35 && p.y <= 0.75);
-            document.getElementById('res').innerText = isStrike ? "STRIKE" : "BALL";
-            document.getElementById('res').style.color = isStrike ? "var(--gold)" : "#fff";
-
-            if (dist < 40) { 
-                const ev = Math.max(0, 112 - (dist * 1.8)).toFixed(1);
-                const dt = v.currentTime - p.t;
-                document.getElementById('ev').innerText = ev + " MPH";
-                document.getElementById('time').innerText = Math.abs(dt) < 0.1 ? "PERFECT" : (dt < 0 ? "EARLY" : "LATE");
-            } else {
-                document.getElementById('ev').innerText = "0.0 MPH";
-                document.getElementById('time').innerText = "WHIFF";
-            }
-            state.lastProcessedIdx = state.currentIdx;
+        // Physics: Within 45px is a "Hit"
+        if (dist < 45) {
+            const velo = (110 - (dist * 1.5)).toFixed(1);
+            const offset = v.currentTime - p.t;
+            document.getElementById('ev').innerText = velo + " MPH";
+            document.getElementById('timing').innerText = Math.abs(offset) < 0.1 ? "PERFECT" : (offset < 0 ? "EARLY" : "LATE");
+        } else {
+            document.getElementById('ev').innerText = "0.0 MPH";
+            document.getElementById('timing').innerText = "WHIFF";
         }
+
+        hasSwungAtCurrent = true;
     }
 </script>
 </body>
