@@ -3,64 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Statcast Pro</title>
+    <title>Cronin Statcast Elite</title>
     <style>
-        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #122412; }
         body { 
-            margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
+            margin: 0; background: #000; color: #fff; font-family: 'Inter', -apple-system, sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
         
         /* Video Top 40% - 25% Side Crop */
-        #v-frame { width: 100%; height: 40vh; overflow: hidden; position: relative; background: #000; border-bottom: 1px solid #333; }
+        #v-frame { width: 100%; height: 40vh; overflow: hidden; position: relative; background: #000; border-bottom: 2px solid #333; }
         video { width: 150%; height: 100%; object-fit: cover; margin-left: -25%; pointer-events: none; }
 
         #deck { 
-            height: 60vh; display: grid; grid-template-columns: 1fr 1fr; 
-            background: var(--bg); padding: 10px; gap: 8px;
+            height: 60vh; display: grid; grid-template-columns: 1fr 1.1fr; 
+            background: var(--bg); padding: 8px; gap: 8px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Left Side: Field & Stats */
+        /* Left Side: Field & Consolidated Stats */
         .left-panel { display: flex; flex-direction: column; gap: 6px; }
         
         #field-container { 
             flex-grow: 1; background: #080808; border: 1px solid #222; border-radius: 4px; 
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
-        .field-svg { width: 90%; height: 90%; }
+        .field-svg { width: 95%; height: 95%; }
 
-        /* Results Bar above HR Fence */
-        .feedback-bar { 
-            position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
-            width: 80%; background: rgba(0,0,0,0.8); border: 1px solid #444;
-            display: flex; justify-content: space-around; padding: 2px 0;
-            font-size: 8px; font-weight: 800; text-transform: uppercase; opacity: 0; transition: 0.3s;
+        /* Unified Broadcast Stats */
+        .stat-block { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 2px; border-left: 3px solid var(--gold); }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .stat-label { font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; }
+        .stat-val { font-size: 14px; font-weight: 900; color: #fff; }
+        .dots { display: flex; gap: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; border: 1px solid #444; transition: 0.3s; }
+        .b-on { background: var(--blue); box-shadow: 0 0 5px var(--blue); } 
+        .s-on { background: var(--gold); box-shadow: 0 0 5px var(--gold); } 
+        .o-on { background: #ff4757; box-shadow: 0 0 5px #ff4757; }
+
+        /* Bases Integrated into Field */
+        .diamond-layer { position: absolute; bottom: 18px; left: 50%; width: 36px; height: 36px; transform: translateX(-50%); pointer-events: none; }
+        .base { position: absolute; width: 7px; height: 7px; background: #333; transform: rotate(45deg); border: 1px solid #555; }
+        #b2 { top: 0; left: 14.5px; } 
+        #b3 { top: 14.5px; left: 0; }  
+        #b1 { top: 14.5px; right: 0; } 
+        .active-runner { background: #fff !important; box-shadow: 0 0 8px #fff; border-color: #fff; }
+
+        /* Right Side: Strike Zone & Feedback */
+        .zone-panel { display: flex; flex-direction: column; gap: 8px; }
+        #feedback-box { 
+            background: rgba(255,255,255,0.05); padding: 6px; border-radius: 2px; 
+            font-size: 10px; font-weight: 800; text-align: center; height: 40px;
+            display: flex; flex-direction: column; justify-content: center;
+            opacity: 0; transition: 0.2s;
         }
-
-        .broadcast-data { background: rgba(255,255,255,0.03); padding: 6px; border-radius: 2px; border-left: 3px solid var(--gold); }
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; font-weight: 800; font-size: 11px; }
-        .dots { display: flex; gap: 3px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #444; }
-        .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #ff4757; }
-
-        /* Diamond Overlaid on Field */
-        .diamond-overlay { position: absolute; bottom: 15px; left: 50%; width: 40px; height: 40px; transform: translateX(-50%); pointer-events: none; }
-        .base-pip { position: absolute; width: 8px; height: 8px; background: #333; transform: rotate(45deg); border: 1px solid #555; transition: 0.3s; }
-        #pip-2 { top: 0; left: 16px; } 
-        #pip-3 { top: 16px; left: 0; }  
-        #pip-1 { top: 16px; right: 0; } 
-        .occupied { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); border-color: #fff; }
-
-        /* Right Side: Strike Zone */
-        .zone-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #sz { 
-            width: 160px; height: 210px; border: 2px solid rgba(255,255,255,0.25); 
-            position: relative; background: rgba(255,255,255,0.02); touch-action: none;
+            width: 100%; flex-grow: 1; border: 2px solid rgba(255,255,255,0.2); 
+            position: relative; background: rgba(255,255,255,0.01); touch-action: none;
         }
-        .grid { position: absolute; background: rgba(255,255,255,0.06); pointer-events: none; }
-        .ball-sprite { position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #ccc; z-index: 10; font-size: 9px; color: #000; font-weight: 900; display: flex; align-items: center; justify-content: center; }
-        .preview-ball { position: absolute; width: 16px; height: 16px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        .grid { position: absolute; background: rgba(255,255,255,0.05); pointer-events: none; }
+        .ball-node { position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid #999; z-index: 10; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .pre-dot { position: absolute; width: 14px; height: 14px; background: rgba(255,255,255,0.15); border: 1px dashed rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -71,30 +74,33 @@
 
 <div id="deck">
     <div class="left-panel">
-        <div class="broadcast-data">
-            <div class="row">RUNS <span id="r-val" style="color:var(--gold)">0</span></div>
-            <div class="row">B <div class="dots" id="b-dots"></div> S <div class="dots" id="s-dots"></div> O <div class="dots" id="o-dots"></div></div>
+        <div class="stat-block">
+            <div class="stat-row"><span class="stat-label">Runs</span><span class="stat-val" id="r-count" style="color:var(--gold)">0</span></div>
+            <div class="stat-row"><span class="stat-label">B</span><div class="dots" id="b-dots"></div><span class="stat-label" style="margin-left:8px">S</span><div class="dots" id="s-dots"></div><span class="stat-label" style="margin-left:8px">O</span><div class="dots" id="o-dots"></div></div>
         </div>
         
         <div id="field-container">
-            <div class="feedback-bar" id="fb-bar">
-                <span id="fb-timing">GOOD</span>
-                <span id="fb-dist" style="color:var(--gold)">0 FT</span>
-            </div>
-            <div class="diamond-overlay">
-                <div id="pip-2" class="base-pip"></div>
-                <div id="pip-3" class="base-pip"></div>
-                <div id="pip-1" class="base-pip"></div>
-            </div>
             <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
-                <path d="M50 95 L15 45 Q50 5 85 45 Z" fill="#0d140d" />
-                <line x1="50" y1="95" x2="10" y2="40" stroke="#333" stroke-width="0.5" />
-                <line x1="50" y1="95" x2="90" y2="40" stroke="#333" stroke-width="0.5" />
-                <circle cx="50" cy="95" r="70" fill="none" stroke="rgba(255,255,255,0.1)" /> </svg>
+                <path d="M50 95 L12 42 Q50 -5 88 42 Z" fill="var(--grass)" />
+                <line x1="50" y1="95" x2="8" y2="38" stroke="white" stroke-width="0.4" />
+                <line x1="50" y1="95" x2="92" y2="38" stroke="white" stroke-width="0.4" />
+                <path d="M28 62 Q50 45 72 62" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" /> <path d="M12 42 Q50 -5 88 42" fill="none" stroke="white" stroke-width="1" /> <text x="50" y="15" font-size="3" fill="#444" text-anchor="middle">400'</text>
+                <text x="18" y="42" font-size="3" fill="#444" text-anchor="middle">350'</text>
+                <text x="82" y="42" font-size="3" fill="#444" text-anchor="middle">350'</text>
+            </svg>
+            <div class="diamond-layer">
+                <div id="base-2" class="base"></div>
+                <div id="base-3" class="base"></div>
+                <div id="base-1" class="base"></div>
+            </div>
         </div>
     </div>
 
     <div class="zone-panel">
+        <div id="feedback-box">
+            <div id="fb-main" style="color:var(--gold); font-size:12px;">READY</div>
+            <div id="fb-sub" style="color:#888;">WAITING FOR PITCH</div>
+        </div>
         <div id="sz">
             <div class="grid" style="width:1px; height:100%; left:33.3%"></div>
             <div class="grid" style="width:1px; height:100%; left:66.6%"></div>
@@ -108,111 +114,142 @@
     const v = document.getElementById('v');
     const sz = document.getElementById('sz');
     const field = document.getElementById('field-svg');
-    const fb = document.getElementById('fb-bar');
+    const fb = document.getElementById('feedback-box');
 
     const pitches = [
-        { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
-        { t: 10.86, x: -0.25, y: 0.25 }, { t: 16.08, x: 0.15, y: 0.10 },
-        { t: 21.50, x: -0.95, y: -0.75 }, { t: 28.03, x: 0.20, y: 0.25 },
-        { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
+        { t: 0.92, x: -0.75, y: 0.75, zone: true }, { t: 6.40, x: -0.40, y: 1.00, zone: false },
+        { t: 10.86, x: -0.25, y: 0.25, zone: true }, { t: 16.08, x: 0.15, y: 0.10, zone: true },
+        { t: 21.50, x: -0.95, y: -0.75, zone: false }, { t: 28.03, x: 0.20, y: 0.25, zone: true },
+        { t: 36.17, x: -0.95, y: 0.00, zone: false }, { t: 41.84, x: -0.80, y: 0.25, zone: false }
     ];
 
-    let game = { r:0, b:0, s:0, o:0, bases:[false,false,false], locked: false };
+    let game = { r:0, b:0, s:0, o:0, bases:[false,false,false], activePitch: null, locked: false };
 
-    function updateUI() {
-        document.getElementById('r-val').innerText = game.r;
-        const render = (id, count, max, cls) => {
-            let h = ''; for(let i=0; i<max; i++) h += `<div class="dot ${i<count?cls:''}"></div>`;
+    function updateHUD() {
+        document.getElementById('r-count').innerText = game.r;
+        const draw = (id, cur, max, cls) => {
+            let h = ''; for(let i=0; i<max; i++) h += `<div class="dot ${i<cur?cls:''}"></div>`;
             document.getElementById(id).innerHTML = h;
         };
-        render('b-dots', game.b, 3, 'b-on');
-        render('s-dots', game.s, 2, 's-on');
-        render('o-dots', game.o, 2, 'o-on');
+        draw('b-dots', game.b, 3, 'b-on');
+        draw('s-dots', game.s, 2, 's-on');
+        draw('o-dots', game.o, 2, 'o-on');
         
-        document.getElementById('pip-1').className = `base-pip ${game.bases[0]?'occupied':''}`;
-        document.getElementById('pip-2').className = `base-pip ${game.bases[1]?'occupied':''}`;
-        document.getElementById('pip-3').className = `base-pip ${game.bases[2]?'occupied':''}`;
+        document.getElementById('base-1').className = `base ${game.bases[0]?'active-runner':''}`;
+        document.getElementById('base-2').className = `base ${game.bases[1]?'active-runner':''}`;
+        document.getElementById('base-3').className = `base ${game.bases[2]?'active-runner':''}`;
     }
 
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if(game.locked) return;
-        const r = sz.getBoundingClientRect();
+        const rect = sz.getBoundingClientRect();
         const t = e.touches[0];
-        const tx = t.clientX - r.left; const ty = t.clientY - r.top;
-        
-        game.locked = true;
-        const time = v.currentTime;
-        const p = pitches.find(p => Math.abs(time - p.t) < 0.6);
-
-        sz.querySelectorAll('.ball-sprite').forEach(b => b.remove());
-
-        if(p) {
-            const px = ((p.x + 0.75) / 1.5) * 160;
-            const py = ((1.0 - p.y) / 2.0) * 210;
-            const diff = Math.abs(time - p.t);
-            const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
-            
-            const ball = document.createElement('div'); ball.className = 'ball-sprite'; ball.innerText = '1';
-            ball.style.left = px+'px'; ball.style.top = py+'px'; sz.appendChild(ball);
-
-            if(dist < 40) {
-                let ft = Math.floor(420 - (dist * 4));
-                handleHit(ft, tx-px, diff);
-            } else { game.s++; }
-        } else { game.s++; }
-        
-        if(game.s >= 3) { game.s = 0; game.o++; }
-        updateUI();
+        handleAction(t.clientX - rect.left, t.clientY - rect.top);
     });
 
-    function handleHit(ft, angle, diff) {
+    function handleAction(tx, ty) {
+        game.locked = true;
+        const now = v.currentTime;
+        const p = pitches.find(p => Math.abs(now - p.t) < 0.6);
+        
+        sz.querySelectorAll('.ball-node').forEach(n => n.remove());
+
+        if(p) {
+            const px = ((p.x + 1) / 2) * sz.offsetWidth;
+            const py = ((1 - p.y) / 2) * sz.offsetHeight;
+            const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
+            const timeDiff = now - p.t;
+
+            const node = document.createElement('div'); node.className = 'ball-node';
+            node.style.left = px+'px'; node.style.top = py+'px'; sz.appendChild(node);
+
+            if(d < 45) { // Contact
+                let ft = Math.floor(420 - (d * 4));
+                let timing = Math.abs(timeDiff) < 0.1 ? "ON TIME" : (timeDiff < 0 ? "EARLY" : "LATE");
+                let contact = d < 15 ? "SOLID" : "WEAK";
+                processHit(ft, tx-px, timing, contact);
+            } else { // Swing and miss
+                strikeOut("WHIFF", "STRIKE");
+            }
+            game.activePitch = p.t; 
+        } else {
+            strikeOut("MISS", "STRIKE");
+        }
+        updateHUD();
+    }
+
+    function processHit(ft, angle, timing, contact) {
         fb.style.opacity = 1;
-        document.getElementById('fb-dist').innerText = ft + " FT";
-        document.getElementById('fb-timing').innerText = diff < 0.1 ? "PERFECT" : "GOOD";
+        let res = "OUT";
+        let bases = 0;
 
+        if(ft >= 380) { res = "HOME RUN"; bases = 4; }
+        else if(ft >= 300) { res = "DOUBLE"; bases = 2; }
+        else if(ft >= 180) { res = "SINGLE"; bases = 1; }
+
+        document.getElementById('fb-main').innerText = res;
+        document.getElementById('fb-sub').innerText = `${timing} / ${contact} (${ft} FT)`;
+
+        // Spray Line
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        const radius = (ft / 450) * 80;
+        const r = (ft / 420) * 85;
         line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
-        line.setAttribute("x2", 50 + (angle * 0.8)); line.setAttribute("y2", 95 - radius);
+        line.setAttribute("x2", 50 + (angle * 0.7)); line.setAttribute("y2", 95 - r);
         line.setAttribute("stroke", "var(--orange)"); line.setAttribute("stroke-width", "1.5");
-        line.setAttribute("class", "hit-line");
-        field.appendChild(line);
+        line.setAttribute("class", "hit-line"); field.appendChild(line);
 
-        let m = 0;
-        if(ft >= 400) m = 4; else if(ft >= 300) m = 2; else if(ft >= 200) m = 1;
-        if(m > 0) {
-            game.s = 0; game.b = 0;
-            for(let i=0; i<m; i++) {
+        if(bases > 0) {
+            game.b = 0; game.s = 0;
+            for(let i=0; i<bases; i++) {
                 if(game.bases[2]) game.r++;
                 game.bases[2] = game.bases[1]; game.bases[1] = game.bases[0];
-                game.bases[0] = (i === 0 && m < 4);
+                game.bases[0] = (i === 0 && bases < 4);
             }
         } else { game.o++; }
     }
 
+    function strikeOut(main, sub) {
+        fb.style.opacity = 1;
+        document.getElementById('fb-main').innerText = main;
+        document.getElementById('fb-sub').innerText = sub;
+        game.s++;
+    }
+
     setInterval(() => {
         const now = v.currentTime;
-        const up = pitches.find(p => p.t > now && p.t - now < 0.15); // Appearing 0.15s before
-        sz.querySelectorAll('.preview-ball').forEach(pb => pb.remove());
+        // Automated Ball/Strike if no swing
+        const missedPitch = pitches.find(p => now > p.t + 0.6 && game.activePitch !== p.t);
+        if(missedPitch) {
+            game.activePitch = missedPitch.t;
+            if(missedPitch.zone) { game.s++; strikeOut("TAKEN", "STRIKE"); }
+            else { game.b++; strikeOut("TAKEN", "BALL"); }
+            if(game.b >= 4) { game.b = 0; /* Walk logic simplified */ }
+            updateHUD();
+        }
+
+        // Preview Dot
+        const up = pitches.find(p => p.t > now && p.t - now < 0.15);
+        sz.querySelectorAll('.pre-dot').forEach(d => d.remove());
         if(up) {
-            const ux = ((up.x + 0.75) / 1.5) * 160;
-            const uy = ((1.0 - up.y) / 2.0) * 210;
-            const pb = document.createElement('div'); pb.className = 'preview-ball';
-            pb.style.left = ux+'px'; pb.style.top = uy+'px'; sz.appendChild(pb);
+            const ux = ((up.x + 1) / 2) * sz.offsetWidth;
+            const uy = ((1 - up.y) / 2) * sz.offsetHeight;
+            const d = document.createElement('div'); d.className = 'pre-dot';
+            d.style.left = ux+'px'; d.style.top = uy+'px'; sz.appendChild(d);
         }
 
         if (now < 0.3) {
-            game.locked = false;
+            game.locked = false; game.activePitch = null;
             fb.style.opacity = 0;
             field.querySelectorAll('.hit-line').forEach(l => l.remove());
-            sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33.3%"></div><div class="grid" style="width:1px; height:100%; left:66.6%"></div><div class="grid" style="height:1px; width:100%; top:33.3%"></div><div class="grid" style="height:1px; width:100%; top:66.6%"></div>';
+            if(game.o >= 3) { game.o = 0; game.r = 0; game.bases = [false,false,false]; }
+            updateHUD();
         } else if (pitches.some(p => p.t > now && p.t - now < 0.3)) {
             game.locked = false;
         }
     }, 50);
 
-    updateUI();
+    updateHUD();
 </script>
 </body>
 </html>
