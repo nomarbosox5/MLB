@@ -1,177 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Pro - Inning Mode</title>
-    <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        #v-sec { width: 100%; position: relative; background: #000; }
-        video { width: 100%; max-height: 46vh; display: block; object-fit: contain; }
-
-        /* UPDATED BROADCAST BAR */
-        #broadcast-bar { 
-            background: #111; border-top: 2px solid #333; border-bottom: 2px solid #333; padding: 10px 15px; 
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .stats-main { display: flex; gap: 15px; align-items: center; }
-        .score-box b { color: #00ffcc; font-size: 1.1rem; }
-        #count-ui { font-family: monospace; font-size: 1.3rem; font-weight: 900; color: #fff; }
-        .out-dots { display: flex; gap: 4px; align-items: center; font-size: 0.7rem; color: #777; }
-        .out-dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #444; background: #222; }
-        .out-dot.filled { background: #ff4d4d; border-color: #ff8888; box-shadow: 0 0 5px #ff4d4d; }
-        
-        .diamond { display: grid; grid-template-columns: repeat(2, 12px); gap: 5px; transform: rotate(45deg); }
-        .base { width: 10px; height: 10px; border: 1px solid #444; background: #222; }
-        .base.on { background: #f1c40f; border-color: #fff; }
-
-        /* DASHBOARD */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 10px; gap: 10px; }
-        #reports { display: flex; flex-direction: column; gap: 4px; }
-        #timing-ui { font-size: 0.8rem; font-weight: 900; min-height: 1rem; }
-        #outcome { font-size: 1.6rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
-        .stat { font-size: 0.7rem; color: #555; font-family: monospace; }
-        .stat b { color: #fff; }
-
-        #field { position: relative; width: 70px; height: 70px; background: #0a0a0a; border-radius: 0 100% 0 0; transform: rotate(-45deg); border-left: 2px solid #333; border-bottom: 2px solid #333; overflow: hidden; margin-top: 5px; }
-        #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s; }
-
-        /* NESTICO ZONE */
-        #nestico-box { position: relative; width: 160px; height: 200px; }
-        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.4); }
-        .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #p-dot { width: 14px; height: 14px; background: white; opacity: 0; z-index: 5; }
-        #s-dot { width: 22px; height: 22px; background: #ff4d4d; border: 1px solid #fff; display: none; z-index: 6; }
-        #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
-    </style>
-</head>
-<body>
-
-<div id="v-sec">
-    <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
-</div>
-
-<div id="broadcast-bar">
-    <div class="stats-main">
-        <div class="score-box">RUNS <b id="run-val">0</b></div>
-        <div id="count-ui">0-0</div>
-        <div class="out-dots">
-            OUTS 
-            <div class="out-dot" id="out-1"></div>
-            <div class="out-dot" id="out-2"></div>
-        </div>
-    </div>
-    <div class="diamond">
-        <div class="base" id="b2"></div><div class="base" id="b1"></div>
-        <div class="base" id="b3"></div><div class="base" style="opacity:0"></div>
-    </div>
-</div>
-
-<div id="dashboard">
-    <div id="reports">
-        <div id="timing-ui"></div>
-        <h1 id="outcome"></h1>
-        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; DIST: <b id="v-di">-</b></div>
-        <div id="field"><div id="hit-line"></div></div>
-    </div>
-    <div id="nestico-box">
-        <div id="tap"></div>
-        <div id="strike-zone"></div>
-        <div id="p-dot" class="dot"></div>
-        <div id="s-dot" class="dot"></div>
-    </div>
-</div>
-
 <script>
-    const video = document.getElementById('v');
-    const PITCHES = [
-        { id:1, t:0.92,  nx:-0.75, ny:3.25, strike:true },
-        { id:2, t:6.40,  nx:-0.40, ny:3.50, strike:true },
-        { id:3, t:10.86, nx:-0.25, ny:2.75, strike:true },
-        { id:4, t:16.08, nx:0.15,  ny:2.60, strike:true },
-        { id:5, t:21.50, nx:0.20,  ny:2.75, strike:true },
-        { id:6, t:28.03, nx:-0.90, ny:1.75, strike:false },
-        { id:7, t:36.17, nx:-0.75, ny:3.00, strike:true },
-        { id:8, t:41.84, nx:-0.90, ny:2.25, strike:false }
-    ];
-
-    let game = { runs: 0, b: 0, s: 0, outs: 0, activeId: null, swung: false };
-
-    function updateUI() {
-        if (game.s >= 3) { game.outs++; game.s=0; game.b=0; }
-        if (game.b >= 4) { document.getElementById('b1').classList.add('on'); game.b=0; game.s=0; }
-        if (game.outs >= 3) { game.outs=0; resetInning(); }
-        
-        document.getElementById('count-ui').innerText = `${game.b}-${game.s}`;
-        document.getElementById('out-1').className = game.outs >= 1 ? 'out-dot filled' : 'out-dot';
-        document.getElementById('out-2').className = game.outs >= 2 ? 'out-dot filled' : 'out-dot';
-        document.getElementById('run-val').innerText = game.runs;
-    }
-
-    function resetInning() {
-        document.querySelectorAll('.base').forEach(b => b.classList.remove('on'));
-        document.getElementById('outcome').innerText = "INNING OVER";
-    }
-
-    video.addEventListener('timeupdate', () => {
-        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
-        if (active && game.activeId !== active.id) {
-            if (game.activeId !== null && !game.swung) {
-                const prev = PITCHES.find(p => p.id === game.activeId);
-                prev.strike ? game.s++ : game.b++;
-                updateUI();
-            }
-            game.activeId = active.id; game.swung = false;
-            document.getElementById('s-dot').style.display = "none";
-            document.getElementById('hit-line').style.width = "0";
-            const px = ((active.nx + 1.5) / 3.0) * 160;
-            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
-            const pd = document.getElementById('p-dot');
-            pd.style.left = px+'px'; pd.style.top = py+'px'; pd.style.opacity = "1";
-        }
-    });
+    // ... (Keep existing PITCHES array with your 00:00.92, etc.)
 
     document.getElementById('tap').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const now = video.currentTime;
-        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.6); // 0.6s window to swing whenever
         
+        // 1. ENSURE VISUAL FEEDBACK TRIGGERS NO MATTER WHAT
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
-        document.getElementById('s-dot').style.cssText = `left:${ux}px; top:${uy}px; display:block;`;
+        const sd = document.getElementById('s-dot');
+        sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
 
+        // 2. CHECK FOR PROXIMITY TO ANY PITCH
+        // We look for any pitch within a 0.8s window of the current video time
+        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.8);
+        
         if (active && !game.swung) {
-            game.swung = true;
+            game.swung = true; // Prevents double-swinging at one pitch
+            
             const tDiff = now - active.t;
             const px = ((active.nx + 1.5) / 3.0) * 160;
             const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
-            const yDiff = py - uy;
+            const yDiff = py - uy; // Distance from center of ball
 
+            // TIMING LABELS
             const tUI = document.getElementById('timing-ui');
-            if (Math.abs(tDiff) < 0.05) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
+            if (Math.abs(tDiff) < 0.06) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
             else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
             else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
 
-            // CONTACT CHECK (Show Logic)
-            if (Math.abs(tDiff) < 0.3 && Math.abs(yDiff) < 35) {
-                const exit = Math.round(108 - (Math.abs(tDiff) * 60) - (Math.abs(yDiff) * 0.5));
+            // 3. CONTACT PHYSICS (The Show Logic)
+            // Must be within 0.3s of arrival and within 40px of the ball height
+            if (Math.abs(tDiff) < 0.30 && Math.abs(yDiff) < 40) {
+                game.s = 0; game.b = 0; // Reset count on contact
+                
+                const exit = Math.round(110 - (Math.abs(tDiff) * 80) - (Math.abs(yDiff) * 0.5));
                 const angle = Math.round(yDiff * 2.5);
-                const dist = Math.round((exit ** 2 / 30) * (1 + angle/45));
+                const dist = Math.round((exit ** 2 / 29) * (1 + angle/45));
 
-                if (Math.abs(tDiff) > 0.22 || Math.abs(yDiff) > 28) {
-                    document.getElementById('outcome').innerText = "FLY OUT";
-                    game.outs++;
-                } else if (dist > 385) {
+                if (dist > 385) {
                     document.getElementById('outcome').innerText = "HOME RUN";
                     game.runs++;
+                } else if (Math.abs(yDiff) > 25 || Math.abs(tDiff) > 0.2) {
+                    document.getElementById('outcome').innerText = "FLY OUT";
+                    game.outs++;
                 } else {
                     document.getElementById('outcome').innerText = "SINGLE";
                     document.getElementById('b1').classList.add('on');
                 }
-                game.s=0; game.b=0;
+
                 document.getElementById('v-ex').innerText = exit + " MPH";
-                document.getElementById('v-di').innerText = dist + " FT";
+                document.getElementById('v-di').innerText = Math.max(0, dist) + " FT";
                 const hl = document.getElementById('hit-line');
                 hl.style.width = Math.min(dist/4, 100) + "%";
                 hl.style.transform = `rotate(${-angle}deg)`;
@@ -180,11 +60,11 @@
                 game.s++;
             }
         } else {
+            // 4. SWUNG AT NOTHING / RE-SWING
             document.getElementById('outcome').innerText = "TOO EARLY";
             game.s++;
         }
-        updateUI();
+        
+        updateUI(); // Refresh the scoreboard
     });
 </script>
-</body>
-</html>
