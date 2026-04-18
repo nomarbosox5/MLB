@@ -3,94 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Centered Statcast Pro</title>
+    <title>Statcast Split UI</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { --gold: #efb21e; --bg: #000; --panel: #111; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* 1. CLEAR VIDEO CONTAINER */
-        #video-frame { width: 100%; height: 42vh; background: #000; position: relative; }
+        /* VIDEO AREA */
+        #v-wrap { width: 100%; height: 42vh; background: #000; position: relative; border-bottom: 2px solid #222; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 2. CENTERED HUD TRAY */
-        #hud { flex-grow: 1; display: flex; flex-direction: column; background: #111; border-top: 1px solid #333; }
-        
-        #top-stats { display: flex; justify-content: space-around; padding: 12px 0; background: #000; }
-        .stat-item { text-align: center; }
-        .stat-item span { display: block; font-size: 0.6rem; text-transform: uppercase; color: #888; }
-        .stat-item b { font-size: 1.2rem; color: #efb21e; }
-        #runs-val { color: #fff; }
+        /* SPLIT TRAY AREA */
+        #tray { flex-grow: 1; display: flex; background: var(--panel); }
 
-        #result-display { height: 35px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.3rem; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
+        /* LEFT SIDE: STATS & RESULTS */
+        #stats-panel { width: 40%; display: flex; flex-direction: column; justify-content: center; padding-left: 15px; border-right: 1px solid #333; }
+        .stat-group { margin-bottom: 15px; }
+        .stat-group span { display: block; font-size: 0.6rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        .stat-group b { font-size: 1.4rem; color: var(--gold); }
+        #run-count { color: #fff; font-size: 1.8rem; }
+        #banner { font-weight: 900; font-size: 1.1rem; text-transform: uppercase; color: #fff; margin-top: 10px; min-height: 1.2em; }
 
-        /* 3. CENTERED INTERACTIVE ZONE */
-        #game-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 15px; }
-        #nestico-grid { 
-            position: relative; width: 220px; height: 260px; 
-            border: 2px solid #555; background: rgba(255,255,255,0.02);
+        /* RIGHT SIDE: INTERACTIVE ZONE */
+        #zone-panel { width: 60%; display: flex; align-items: center; justify-content: center; }
+        #zone { 
+            position: relative; width: 180px; height: 212px; 
+            border: 2px solid #444; background: rgba(255,255,255,0.03);
             background-image: linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        /* CONTACT VISUALS */
+        /* SCALED HIT VISUALS */
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #ball { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 10px #fff; opacity: 0; z-index: 5; }
-        #bat { width: 24px; height: 24px; border: 2px solid #efb21e; background: rgba(239, 178, 30, 0.2); display: none; z-index: 10; }
+        #pitch-ball { width: 20px; height: 20px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 10; }
+        #bat-ring { width: 30px; height: 30px; border: 3px solid var(--gold); background: rgba(239, 178, 30, 0.2); display: none; z-index: 20; }
         
-        #touch-layer { position: absolute; inset: 0; z-index: 50; touch-action: none; }
+        #touch-surface { position: absolute; inset: 0; z-index: 100; touch-action: none; }
     </style>
 </head>
 <body>
 
-<div id="video-frame" onclick="document.getElementById('v').play()">
+<div id="v-wrap" onclick="document.getElementById('v').play()">
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
 </div>
 
-<div id="hud">
-    <div id="top-stats">
-        <div class="stat-item"><span>Total Runs</span><b id="runs-val">0</b></div>
-        <div class="stat-item"><span>Exit Velo</span><b id="ev-val">0.0</b></div>
-        <div class="stat-item"><span>Distance</span><b id="dist-val">0</b></div>
+<div id="tray">
+    <div id="stats-panel">
+        <div class="stat-group"><span>Total Runs</span><b id="run-count">0</b></div>
+        <div class="stat-group"><span>Exit Velocity</span><b id="ev-display">0.0</b></div>
+        <div class="stat-group"><span>Distance</span><b id="dist-display">0</b></div>
+        <div id="banner">READY</div>
     </div>
-    
-    <div id="result-display">STANDBY</div>
 
-    <div id="game-area">
-        <div id="nestico-grid">
-            <div id="touch-layer"></div>
-            <div id="ball" class="dot"></div>
-            <div id="bat" class="dot"></div>
+    <div id="zone-panel">
+        <div id="zone">
+            <div id="touch-surface"></div>
+            <div id="pitch-ball" class="dot"></div>
+            <div id="bat-ring" class="dot"></div>
         </div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
-    const resText = document.getElementById('result-display');
+    const msg = document.getElementById('banner');
     
-    // COORDINATES: WIDENED (-0.8 TO 0.8) CENTERED ON 220px WIDTH
+    // COORDINATES: WIDENED (-0.8 TO 0.8) MAP TO 180px WIDTH BOX
     const PITCHES = [
-        {t: 0.92, x: 55,  y: 45},  {t: 6.40, x: 90,  y: 30},
-        {t: 10.86,x: 105, y: 80},  {t: 16.08,x: 145, y: 100},
-        {t: 21.50,x: 160, y: 80},  {t: 28.03,x: 30,  y: 180},
-        {t: 36.17,x: 55,  y: 70},  {t: 41.84,x: 35,  y: 140}
+        {t: 0.92, x: 45,  y: 40},  {t: 6.40, x: 75,  y: 25},
+        {t: 10.86,x: 88,  y: 65},  {t: 16.08,x: 120, y: 80},
+        {t: 21.50,x: 132, y: 65},  {t: 28.03,x: 25,  y: 150},
+        {t: 36.17,x: 45,  y: 55},  {t: 41.84,x: 30,  y: 115}
     ];
 
-    let state = { runs: 0, lastT: 0, activeIdx: -1, swung: false };
+    let state = { runs: 0, lastTime: 0, activeIdx: -1, swung: false };
 
     v.addEventListener('timeupdate', () => {
         const now = v.currentTime;
-        if (now < state.lastT) { state.activeIdx = -1; state.swung = false; resText.innerText = "READY"; }
-        state.lastT = now;
+        if (now < state.lastTime) { 
+            state.activeIdx = -1; state.swung = false; 
+            msg.innerText = "READY"; msg.style.color = "#fff"; 
+        }
+        state.lastTime = now;
 
         let idx = -1;
         PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.6) idx = i; });
 
         if (idx !== state.activeIdx) {
             state.activeIdx = idx; state.swung = false;
-            document.getElementById('bat').style.display = 'none';
-            const b = document.getElementById('ball');
+            document.getElementById('bat-ring').style.display = 'none';
+            const b = document.getElementById('pitch-ball');
             if (idx !== -1) {
                 b.style.left = PITCHES[idx].x + 'px';
                 b.style.top = PITCHES[idx].y + 'px';
@@ -99,49 +102,51 @@
         }
     });
 
-    document.getElementById('touch-layer').addEventListener('touchstart', (e) => {
+    document.getElementById('touch-surface').addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (state.activeIdx === -1 || state.swung) return;
         state.swung = true;
 
-        const rect = document.getElementById('nestico-grid').getBoundingClientRect();
+        const rect = document.getElementById('zone').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
         
-        const bUI = document.getElementById('bat');
-        bUI.style.left = ux + 'px'; bUI.style.top = uy + 'px'; bUI.style.display = 'block';
+        const bat = document.getElementById('bat-ring');
+        bat.style.left = ux + 'px'; bat.style.top = uy + 'px'; bat.style.display = 'block';
 
         const p = PITCHES[state.activeIdx];
         const error = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
 
-        if (error < 35) {
-            let ev = 114 - (error * 0.9);
-            const la = Math.round((p.y - uy) * 1.8); // Offset-based Launch Angle
+        if (error < 42) {
+            let ev = 115 - (error * 0.85);
+            const dy = p.y - uy; 
+            const la = Math.round(dy * 2.2); 
             
-            if (error < 6) {
-                ev += 4; resText.innerText = "SQUARED UP";
-                resText.style.color = "#efb21e";
-            } else if (la > 45) {
-                resText.innerText = "POP UP"; resText.style.color = "#fff";
-            } else if (la < 5) {
-                resText.innerText = "GROUND BALL"; resText.style.color = "#fff";
+            if (error < 8) {
+                ev += 4; msg.innerText = "SQUARED UP";
+                msg.style.color = "#efb21e";
+            } else if (la > 40) {
+                msg.innerText = "FLY BALL"; msg.style.color = "#fff";
+            } else if (la < 8) {
+                msg.innerText = "GROUND BALL"; msg.style.color = "#fff";
             } else {
-                resText.innerText = "LINE DRIVE"; resText.style.color = "#fff";
+                msg.innerText = "LINE DRIVE"; msg.style.color = "#fff";
             }
 
             const finalEv = Math.round(ev);
             const dist = Math.round((finalEv * finalEv / 28) * (1 + la/90));
 
-            document.getElementById('ev-val').innerText = finalEv + " MPH";
-            document.getElementById('dist-val').innerText = dist + " FT";
+            document.getElementById('ev-display').innerText = finalEv + " MPH";
+            document.getElementById('dist-display').innerText = dist + " FT";
             
             if (la >= 22 && la <= 38 && finalEv > 102) {
                 state.runs++;
-                document.getElementById('runs-val').innerText = state.runs;
-                resText.innerText = "HOME RUN";
+                document.getElementById('run-count').innerText = state.runs;
+                msg.innerText = "HOME RUN";
+                msg.style.color = "#efb21e";
             }
         } else {
-            resText.innerText = "WHIFF"; resText.style.color = "red";
+            msg.innerText = "WHIFF"; msg.style.color = "red";
         }
     });
 </script>
