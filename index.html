@@ -13,7 +13,6 @@
         #v-frame { width: 100%; height: 63vh; overflow: hidden; position: relative; background: #000; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
-        /* PRECISE 0.5 RATIO SHIFT (0.95 to 1.05) */
         #deck { height: 33.5vh; display: grid; grid-template-columns: 0.95fr 1.05fr; background: #050505; padding: 4px 8px; gap: 8px; padding-bottom: env(safe-area-inset-bottom); }
         .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; position: relative; }
 
@@ -36,15 +35,22 @@
         
         .hit-dot { position: absolute; width: 16px; height: 16px; background: rgba(0,0,0,0.9); border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 900; transform: translate(-50%, -50%); }
 
-        #result-card { width: 100%; height: 5vh; background: var(--board); border: 1px solid #444; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-        #res-main { color: var(--gold); font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+        #result-card { width: 100%; height: 6vh; background: var(--board); border: 1px solid #444; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; }
+        #res-main { color: var(--gold); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+        #res-sub { color: #888; font-size: 8px; font-family: monospace; margin-top: 1px; }
 
-        #swing-zone { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; touch-action: none; background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 4px; margin-top: 4px; }
+        #swing-zone { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; touch-action: none; background: rgba(255,255,255,0.02); border-radius: 4px; margin-top: 4px; }
         
-        /* STRIKE ZONE (120x155) */
-        #strike-zone { width: 120px; height: 155px; border: 3px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.03); position: relative; pointer-events: none; border-radius: 2px; }
+        #strike-zone { 
+            width: 110px; 
+            height: 160px; 
+            border: 3px solid #fff; 
+            background: rgba(255,255,255,0.03); 
+            position: relative; 
+            pointer-events: none; 
+            border-radius: 2px; 
+        }
         
-        /* UPDATED ASSET SIZES */
         .ball-asset { position: absolute; width: 26px; height: 26px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 12px #fff; }
         .bat-asset { position: absolute; width: 35px; height: 35px; background: var(--wood); border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 2px solid #000; }
         .pitch-dot { position: absolute; width: 26px; height: 26px; background: rgba(255,255,255,0.3); border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 1; }
@@ -78,29 +84,29 @@
     </div>
 
     <div class="panel">
-        <div id="result-card"><div id="res-main"></div></div>
+        <div id="result-card">
+            <div id="res-main">READY</div>
+            <div id="res-sub">WAITING FOR PITCH</div>
+        </div>
         <div id="swing-zone">
-            <div id="strike-zone">
-                <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.15);"></div>
-                <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.15);"></div>
-                <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.15);"></div>
-                <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.15);"></div>
-            </div>
+            <div id="strike-zone"></div>
         </div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
-    const swz = document.getElementById('swing-zone');
     const sz = document.getElementById('strike-zone');
+    const swz = document.getElementById('swing-zone');
     const fSvg = document.getElementById('field-svg');
+    const resMain = document.getElementById('res-main');
+    const resSub = document.getElementById('res-sub');
 
     const pitches = [
-        { t: 0.92, x: -0.75, y: 0.75, strike: true }, { t: 6.40, x: -0.40, y: 1.00, strike: false },
-        { t: 10.86, x: -0.25, y: 0.25, strike: true }, { t: 16.08, x: 0.15, y: 0.10, strike: true },
-        { t: 21.50, x: -0.95, y: -0.75, strike: false }, { t: 28.03, x: 0.20, y: 0.25, strike: true },
-        { t: 36.17, x: -0.95, y: 0.00, strike: false }, { t: 41.84, x: -0.80, y: 0.25, strike: false }
+        { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
+        { t: 10.86, x: -0.25, y: 0.25 }, { t: 16.08, x: 0.15, y: 0.10 },
+        { t: 21.50, x: -0.95, y: -0.75 }, { t: 28.03, x: 0.20, y: 0.25 },
+        { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
     let g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
@@ -113,34 +119,53 @@
         
         g.processed = true; g.lastIdx = pIdx;
         const rect = sz.getBoundingClientRect(); 
-        const tx = e.touches[0].clientX - rect.left;
-        const ty = e.touches[0].clientY - rect.top;
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
 
         const p = pitches[pIdx];
         const px = ((p.x + 1) / 2) * sz.offsetWidth;
         const py = ((1 - p.y) / 2) * sz.offsetHeight;
         
-        const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
+        const dist = Math.sqrt((touchX - px)**2 + (touchY - py)**2);
         const tDiff = now - p.t;
 
         const bat = document.createElement('div'); bat.className='bat-asset';
-        bat.style.left=tx+'px'; bat.style.top=ty+'px'; sz.appendChild(bat);
+        bat.style.left=touchX+'px'; bat.style.top=touchY+'px'; sz.appendChild(bat);
         const ball = document.createElement('div'); ball.className='ball-asset';
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
         if(dist < 35) {
-            const la = ((ty - py) / 20) * 45; 
-            const ang = ((px - tx) * 2.5); 
-            const ev = 110 - (dist * 2.2) - (Math.abs(tDiff) * 350);
-            const ft = (ev * 4.3) * (Math.cos(la * Math.PI / 180));
+            const la = Math.round(((touchY - py) / 20) * 45); 
+            const ang = Math.round(((px - touchX) * 2.5)); 
+            const ev = Math.round(110 - (dist * 2.2) - (Math.abs(tDiff) * 350));
+            const ft = Math.round((ev * 4.3) * (Math.cos(la * Math.PI / 180)));
+            const timeTag = tDiff < 0 ? "EARLY" : "LATE";
+            
+            resSub.innerText = `EV: ${ev} | LA: ${la}° | TIME: ${Math.abs(tDiff).toFixed(2)}s ${timeTag}`;
             handleHit(ft, ang, la);
-        } else { addStrike("SWINGING"); }
+        } else { 
+            resSub.innerText = `WHIFF | DIST: ${Math.round(dist)}px | TIME: ${Math.abs(tDiff).toFixed(2)}s`;
+            addStrike("SWINGING"); 
+        }
         updateUI();
     });
 
     function handleHit(ft, angle, la) {
         let res = "OUT"; let move = 0; let tag = "OUT";
-        if(Math.abs(angle) > 52) { addStrike("FOUL"); return; } 
+        
+        // FOUL CATCH ZONE: Angle > 52 and Distance between 10-30ft
+        if(Math.abs(angle) > 52) { 
+            if (ft > 10 && ft < 30) {
+                g.o++; g.b = 0; g.s = 0;
+                resMain.innerText = "FOUL OUT (CAUGHT)";
+                checkState();
+            } else {
+                addStrike("FOUL");
+                resMain.innerText = "FOUL";
+            }
+            updateUI(); return; 
+        } 
+
         if (ft < 110) { res = la < 0 ? "GROUND OUT" : "POP OUT"; tag = "OUT"; }
         else if (ft < 225) { res = "SINGLE"; move = 1; tag = "1B"; }
         else if (ft < 325) { res = "DOUBLE"; move = 2; tag = "2B"; }
@@ -149,7 +174,8 @@
             if (ft >= wall) { res = "HOME RUN"; move = 4; tag = "HR"; }
             else { res = "TRIPLE"; move = 3; tag = "3B"; }
         }
-        document.getElementById('res-main').innerText = res;
+        
+        resMain.innerText = `${res} (${ft} FT)`;
         const fieldRange = 50; const distScaled = (ft / 400) * fieldRange;
         const endY = 98 - distScaled; const endX = 50 + (angle * (distScaled / fieldRange));
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -158,10 +184,12 @@
         line.setAttribute("stroke", move > 0 ? "var(--gold)" : "#555");
         line.setAttribute("stroke-width", "1.5");
         fSvg.appendChild(line);
+        
         const dot = document.createElement('div');
         dot.className = 'hit-dot'; dot.innerText = tag;
         dot.style.left = endX + "%"; dot.style.top = endY + "%";
         document.getElementById('field-container').appendChild(dot);
+
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
         else { g.o++; g.b = 0; g.s = 0; checkState(); }
     }
@@ -176,17 +204,17 @@
     }
 
     function addStrike(reason) {
-        if (reason === "FOUL") { if (g.s < 2) g.s++; document.getElementById('res-main').innerText = "FOUL"; } 
+        if (reason === "FOUL") { if (g.s < 2) g.s++; } 
         else {
-            g.s++; if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; document.getElementById('res-main').innerText = "STRIKE THREE"; checkState(); }
-            else { document.getElementById('res-main').innerText = "STRIKE"; }
+            g.s++; if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; resMain.innerText = "STRIKE THREE"; checkState(); }
+            else { resMain.innerText = "STRIKE"; }
         }
     }
 
     function addBall() {
-        g.b++; document.getElementById('res-main').innerText = "BALL";
+        g.b++; resMain.innerText = "BALL";
         if(g.b >= 4) {
-            g.b = 0; g.s = 0; document.getElementById('res-main').innerText = "WALK";
+            g.b = 0; g.s = 0; resMain.innerText = "WALK";
             if (g.bases[0] && g.bases[1] && g.bases[2]) g.r++;
             else if (g.bases[0] && g.bases[1]) g.bases[2] = true;
             else if (g.bases[0]) g.bases[1] = true;
@@ -194,7 +222,7 @@
         }
     }
 
-    function checkState() { if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; document.getElementById('res-main').innerText = "3 OUTS"; } }
+    function checkState() { if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resMain.innerText = "3 OUTS"; } }
 
     function updateUI() {
         document.getElementById('r-val').innerText = g.r;
@@ -210,11 +238,14 @@
 
     setInterval(() => {
         const now = v.currentTime;
-        const upcomingIdx = pitches.findIndex(p => p.t - now < 0.85 && p.t - now > 0.75);
-        if(upcomingIdx !== -1) {
-            sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
-            document.getElementById('res-main').innerText = ""; 
+        const nextPitch = pitches.find(p => p.t > now);
+        
+        // 3 SEC CLEANUP
+        if (nextPitch && nextPitch.t - now < 3.0 && nextPitch.t - now > 2.85) {
+            sz.querySelectorAll('.ball-asset, .bat-asset, .pitch-dot').forEach(el => el.remove());
+            resMain.innerText = "GET READY..."; resSub.innerText = "";
         }
+
         const autoIdx = pitches.findIndex(p => now > p.t + 0.8 && g.lastIdx < pitches.indexOf(p));
         if(autoIdx !== -1) {
             const p = pitches[autoIdx];
@@ -223,19 +254,23 @@
             dot.style.top=(((1 - p.y) / 2) * sz.offsetHeight)+'px';
             sz.appendChild(dot);
             g.lastIdx = autoIdx; g.processed = true;
-            if(p.strike) addStrike("TAKEN"); else addBall();
+            
+            resSub.innerText = `LOC X: ${p.x.toFixed(2)} | Y: ${p.y.toFixed(2)}`;
+            if(p.x >= -0.75 && p.x <= 0.75 && p.y >= -1.0 && p.y <= 1.0) addStrike("TAKEN"); 
+            else addBall();
             updateUI();
         }
+
         if (now < 0.2 && g.lastIdx !== -1) {
             g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
             fSvg.querySelectorAll('line').forEach(el => el.remove());
             document.getElementById('field-container').querySelectorAll('.hit-dot').forEach(el => el.remove());
             sz.querySelectorAll('.ball-asset, .bat-asset, .pitch-dot').forEach(el => el.remove());
-            document.getElementById('res-main').innerText = ""; 
+            resMain.innerText = "NEW GAME"; resSub.innerText = "";
             updateUI();
         }
         if(g.processed && !pitches.some(p => Math.abs(now - p.t) < 0.8)) g.processed = false;
-    }, 50);
+    }, 100);
     updateUI();
 </script>
 </body>
