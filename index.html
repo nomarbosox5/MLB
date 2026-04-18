@@ -3,106 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Home Run Challenge - Hardcoded</title>
+    <title>MLB Challenge - Fixed Layout</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
-        #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
-        
-        #video-container { width: 100%; background: #000; position: relative; }
-        video { width: 100%; height: auto; max-height: 48vh; display: block; }
-
-        /* Game State HUD */
-        #hud { position: absolute; top: 10px; left: 15px; font-family: monospace; color: #00ffcc; font-size: 0.9rem; text-shadow: 1px 1px 5px #000; }
-
-        #ui-layer { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 30px; padding: 20px; }
-        
-        #results-area { width: 180px; display: flex; flex-direction: column; }
-        #outcome { font-size: 2.2rem; font-weight: 900; text-transform: uppercase; line-height: 1; margin: 0; color: #00ffcc; min-height: 2.2rem; }
-        #situation { font-size: 0.9rem; color: #fff; margin-top: 5px; opacity: 0.8; }
-        #timing-msg { font-size: 0.8rem; color: #666; text-transform: uppercase; margin-top: 5px; letter-spacing: 1px; }
-
-        #statcast-box { 
-            width: 140px; height: 195px; border: 4px solid #fff; 
-            position: relative; background: rgba(255,255,255,0.05);
+        /* Force the body to be exactly the height of the phone screen */
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: white; 
+            font-family: -apple-system, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
         }
 
+        /* Top Section: Fixed Video */
+        #video-section { 
+            width: 100%; 
+            background: #111; 
+            border-bottom: 2px solid #333;
+        }
+        video { 
+            width: 100%; 
+            display: block; 
+            max-height: 40vh; /* Limits video to top 40% of screen */
+        }
+
+        /* Bottom Section: Dashboard */
+        #dashboard { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-around; 
+            padding: 20px; 
+        }
+
+        #results { width: 150px; }
+        #outcome { font-size: 2rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
+        #status { font-size: 0.9rem; color: #888; margin-top: 5px; }
+
+        /* The Nestico Box */
+        #statcast-box { 
+            width: 130px; 
+            height: 180px; 
+            border: 3px solid #fff; 
+            position: relative; 
+            background: rgba(255,255,255,0.05);
+        }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #actual-pitch { width: 20px; height: 20px; background: white; z-index: 5; opacity: 0; box-shadow: 0 0 15px #fff; }
-        #user-swing { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; z-index: 6; display: none; }
+        #pitch-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; }
+        #swing-dot { width: 28px; height: 28px; background: #ff4d4d; border: 2px solid #fff; display: none; }
         
-        #tap-surface { position: absolute; top: -50px; left: -50px; right: -50px; bottom: -50px; z-index: 10; }
+        #tap-zone { position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px; z-index: 10; }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div id="video-container">
-        <div id="hud">B: <span id="b">0</span> S: <span id="s">0</span> | OUTS: <span id="o">0</span></div>
+    <div id="video-section">
         <video id="v" autoplay muted loop playsinline>
             <source src="https://github.com/nomarbosox5/MLB/raw/refs/heads/main/ScreenRecording_04-17-2026%2000-42-49_1.mov" type="video/quicktime">
         </video>
     </div>
 
-    <div id="ui-layer">
-        <div id="results-area">
-            <span id="outcome">READY</span>
-            <span id="situation">Waiting for Pitch...</span>
-            <span id="timing-msg">Watch the zone</span>
+    <div id="dashboard">
+        <div id="results">
+            <h1 id="outcome">READY</h1>
+            <div id="status">Watch the Pitch</div>
         </div>
-        
+
         <div id="statcast-box">
-            <div id="tap-surface"></div>
-            <div id="actual-pitch" class="dot"></div>
-            <div id="user-swing" class="dot"></div>
+            <div id="tap-zone"></div>
+            <div id="pitch-dot" class="dot"></div>
+            <div id="swing-dot" class="dot"></div>
         </div>
     </div>
-</div>
 
 <script>
     const video = document.getElementById('v');
     const outcome = document.getElementById('outcome');
-    const situation = document.getElementById('situation');
-    const timingMsg = document.getElementById('timing-msg');
-    const pitchDot = document.getElementById('actual-pitch');
-    const swingDot = document.getElementById('user-swing');
+    const status = document.getElementById('status');
+    const pitchDot = document.getElementById('pitch-dot');
+    const swingDot = document.getElementById('swing-dot');
 
-    // GAME TRACKING
-    let balls = 0, strikes = 0, outs = 0;
-
-    // HARDCODED TARGETS: Update 't' for the video second and 'x/y' for the box location
-    const PITCHES = [
-        { t: 1.25, x: 20, y: 175, type: "HR", desc: "412ft Over the Wall" },
-        { t: 6.42, x: 120, y: 30, type: "OUT", desc: "Fly out to Center" },
-        { t: 12.10, x: 70, y: 90, type: "HIT", desc: "Line Drive Single" },
-        { t: 18.50, x: 40, y: 160, type: "HR", desc: "Opposite Field Blast" }
-    ];
-
-    let currentPitch = null;
+    // Hardcoded Target per your new video timing
+    const TARGET = { t: 1.25, x: 20, y: 160 }; 
 
     video.addEventListener('timeupdate', () => {
-        // Reset dots and feedback on loop
-        if (video.currentTime < 0.2) {
-            swingDot.style.display = "none";
-            outcome.innerText = "READY";
-            situation.innerText = "Next Pitch...";
-            outcome.style.color = "#00ffcc";
-        }
+        // Position the dot
+        pitchDot.style.left = TARGET.x + 'px';
+        pitchDot.style.top = TARGET.y + 'px';
 
-        // Find the active hardcoded pitch based on video time
-        const active = PITCHES.find(p => Math.abs(video.currentTime - p.t) < 0.25);
-        
-        if (active) {
-            currentPitch = active;
-            pitchDot.style.left = active.x + 'px';
-            pitchDot.style.top = active.y + 'px';
+        // Visibility based on timing
+        if (Math.abs(video.currentTime - TARGET.t) < 0.2) {
             pitchDot.style.opacity = "1";
         } else {
             pitchDot.style.opacity = "0";
-            currentPitch = null;
+            if (video.currentTime < 0.1) swingDot.style.display = "none";
         }
     });
 
-    document.getElementById('tap-surface').addEventListener('touchstart', (e) => {
+    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const rect = document.getElementById('statcast-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
@@ -112,46 +112,17 @@
         swingDot.style.top = uy + 'px';
         swingDot.style.display = 'block';
 
-        if (!currentPitch) {
-            // WHIFF Logic
+        const timeDiff = Math.abs(video.currentTime - TARGET.t);
+        
+        if (timeDiff < 0.25) {
+            outcome.innerText = "HOME RUN";
+            outcome.style.color = "#00ffcc";
+            status.innerText = "PERFECT TIMING";
+        } else {
             outcome.innerText = "WHIFF";
             outcome.style.color = "#ff4d4d";
-            situation.innerText = "Swing and a miss";
-            strikes++;
-        } else {
-            const dist = Math.sqrt((ux - currentPitch.x)**2 + (uy - currentPitch.y)**2);
-            const tDiff = Math.abs(video.currentTime - currentPitch.t);
-
-            if (dist > 55 || tDiff > 0.4) {
-                outcome.innerText = "MISS";
-                outcome.style.color = "#ff4d4d";
-                situation.innerText = "Chased outside";
-                strikes++;
-            } else {
-                // Determine Hit Quality
-                if (uy < currentPitch.y - 10) {
-                    outcome.innerText = "GROUND OUT";
-                    situation.innerText = "Rolled over it";
-                    outs++;
-                } else if (tDiff < 0.12 && dist < 25) {
-                    outcome.innerText = currentPitch.type === "HR" ? "HOME RUN" : "BASE HIT";
-                    outcome.style.color = "#00ffcc";
-                    situation.innerText = currentPitch.desc;
-                    strikes = 0; balls = 0;
-                } else {
-                    outcome.innerText = "FOUL BALL";
-                    situation.innerText = "Just a bit late";
-                    strikes++;
-                }
-            }
-            timingMsg.innerText = tDiff < 0.1 ? "PERFECT" : (video.currentTime < currentPitch.t ? "EARLY" : "LATE");
+            status.innerText = video.currentTime < TARGET.t ? "TOO EARLY" : "TOO LATE";
         }
-
-        // Update Scoreboard
-        if (strikes >= 3) { outs++; strikes = 0; balls = 0; }
-        document.getElementById('s').innerText = strikes;
-        document.getElementById('b').innerText = balls;
-        document.getElementById('o').innerText = outs;
     });
 </script>
 </body>
