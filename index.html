@@ -3,68 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast: Gap Logic Build</title>
+    <title>Statcast: Precision Replay</title>
     <style>
         :root { --gold: #efb21e; --grass: #1e3d1a; }
         * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        #v-area { width: 100%; height: 40vh; background: #000; position: relative; border-bottom: 2px solid #333; }
+        #v-area { width: 100%; height: 42vh; background: #000; position: relative; border-bottom: 2px solid #333; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
         #tray { flex-grow: 1; display: flex; background: #0a0a0a; }
 
-        #left-panel { width: 42%; display: flex; flex-direction: column; padding: 12px; border-right: 1px solid #222; }
+        #left-panel { width: 42%; display: flex; flex-direction: column; padding: 10px; border-right: 1px solid #222; }
         .data-card { background: #111; padding: 8px; border-radius: 4px; border-left: 3px solid var(--gold); margin-bottom: 6px; }
         .data-label { font-size: 0.6rem; color: #888; text-transform: uppercase; }
         .data-value { font-size: 1rem; font-weight: 900; }
 
         #field { 
-            width: 100%; height: 80px; background: var(--grass); margin: 5px 0; 
+            width: 100%; height: 90px; background: var(--grass); margin: 5px 0; 
             position: relative; border: 1px solid #333;
             clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
         }
         .hit-dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid #000; }
 
-        #right-panel { width: 58%; display: flex; align-items: center; justify-content: center; position: relative; background: #000; }
-        #nestico-grid { position: relative; width: 200px; height: 240px; background: #050505; border: 1px solid #222; }
+        #right-panel { width: 58%; display: flex; align-items: center; justify-content: center; position: relative; }
+        
+        /* EXACT SCALE CONTAINER */
+        #nestico-grid { 
+            position: relative; 
+            width: 200px; 
+            height: 240px; 
+            background: #050505; 
+            border: 1px solid #333; 
+        }
+        
         #strike-zone { 
             position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; 
             border: 2px solid rgba(255,255,255,0.2); display: grid; 
             grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; 
+            pointer-events: none;
         }
 
-        #grid-overlay {
-            position: absolute; inset: 0; z-index: 200; background: rgba(0,0,0,0.8);
-            display: flex; align-items: center; justify-content: center;
-            text-align: center; color: var(--gold); font-weight: 900; cursor: pointer;
+        .overlay {
+            position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: var(--gold); font-weight: 900;
         }
 
         .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; }
         #ball-dot { width: 18px; height: 18px; background: #fff; box-shadow: 0 0 12px #fff; z-index: 50; }
         #bat-ring { width: 32px; height: 32px; border: 2px solid var(--gold); background: rgba(239,178,30,0.2); z-index: 60; }
+        
+        .btn { padding: 12px 24px; background: var(--gold); color: #000; border: none; border-radius: 4px; font-weight: 900; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div id="v-area">
+    <div id="start-overlay" class="overlay">
+        <button class="btn" onclick="startVideo()">START SESSION</button>
+    </div>
+    <div id="replay-overlay" class="overlay" style="display:none;">
+        <div>SESSION COMPLETE</div>
+        <button class="btn" onclick="restartSession()">REPLAY VIDEO</button>
+    </div>
     <video id="v" playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
 <div id="tray">
     <div id="left-panel">
-        <div class="data-card"><div class="data-label">Exit Velo</div><div id="ev-val" class="data-value">-</div></div>
-        <div class="data-card"><div class="data-label">Launch Angle</div><div id="la-val" class="data-value">-</div></div>
+        <div class="data-card"><div class="data-label">EV (MPH)</div><div id="ev-val" class="data-value">-</div></div>
+        <div class="data-card"><div class="data-label">LAUNCH ANGLE</div><div id="la-val" class="data-value">-</div></div>
         <div id="field"></div>
-        <div style="font-size: 0.7rem; color: #666; margin-top: 4px;">
+        <div style="font-size: 0.7rem; color: #666;">
             TIMING: <b id="time-f" style="color:#fff">-</b><br>
             RUNS: <b id="r-val" style="color:var(--gold)">0</b> | OUTS: <b id="o-val">0</b>
         </div>
     </div>
 
     <div id="right-panel">
-        <div id="nestico-grid">
-            <div id="grid-overlay">START SESSION</div>
+        <div id="nestico-grid" onpointerdown="handleSwing(event)">
             <div id="strike-zone"></div>
             <div id="ball-dot" class="marker"></div>
             <div id="bat-ring" class="marker"></div>
@@ -81,77 +99,72 @@
         {t: 36.17,x: 50, y: 65}, {t: 41.84,x: 40, y: 130}
     ];
 
-    let g = { runs: 0, outs: 0, idx: -1, active: false, lastTime: 0, lastSwing: 0 };
+    let g = { runs: 0, outs: 0, idx: -1, active: false };
 
-    document.getElementById('grid-overlay').addEventListener('pointerdown', function(e) {
-        e.stopPropagation();
-        this.style.display = 'none';
+    function startVideo() {
+        document.getElementById('start-overlay').style.display = 'none';
         v.play();
-    });
+    }
+
+    function restartSession() {
+        v.currentTime = 0;
+        g.runs = 0; g.outs = 0; g.idx = -1;
+        document.getElementById('r-val').innerText = "0";
+        document.getElementById('o-val').innerText = "0";
+        document.getElementById('field').innerHTML = '';
+        document.getElementById('replay-overlay').style.display = 'none';
+        v.play();
+    }
 
     v.addEventListener('timeupdate', () => {
         const now = v.currentTime;
         
-        // Loop Reset
-        if (now < g.lastTime) {
-            document.getElementById('field').innerHTML = '';
-            g.idx = -1;
-        }
-        g.lastTime = now;
-
-        // Auto-Clear markers if it's been 3 seconds since a swing AND no pitch is active
-        if (Date.now() - g.lastSwing > 3000 && !g.active) {
-            document.getElementById('ball-dot').style.opacity = '0';
-            document.getElementById('bat-ring').style.opacity = '0';
+        // End of Video detection
+        if (v.duration && now >= v.duration - 0.2) {
+            document.getElementById('replay-overlay').style.display = 'flex';
         }
 
         let cur = -1;
         PITCHES.forEach((p, i) => { if (now >= p.t - 0.05 && now < p.t + 0.45) cur = i; });
 
-        if (cur !== -1) {
+        if (cur !== -1 && cur !== g.idx) {
             g.idx = cur; 
             g.active = true;
+            document.getElementById('bat-ring').style.opacity = '0'; // Clear previous swing
             const b = document.getElementById('ball-dot');
             b.style.left = PITCHES[cur].x + 'px';
             b.style.top = PITCHES[cur].y + 'px';
             b.style.opacity = '1';
-        } else {
-            g.active = false;
         }
     });
 
-    document.getElementById('nestico-grid').addEventListener('pointerdown', function(e) {
-        e.stopPropagation();
+    function handleSwing(e) {
         if (g.idx === -1 || !g.active) return;
-        
         g.active = false;
-        g.lastSwing = Date.now(); // Mark the swing time
 
-        const rect = this.getBoundingClientRect();
+        const rect = document.getElementById('nestico-grid').getBoundingClientRect();
         const ux = e.clientX - rect.left;
         const uy = e.clientY - rect.top;
         const p = PITCHES[g.idx];
 
         const bat = document.getElementById('bat-ring');
-        bat.style.left = ux + 'px'; 
-        bat.style.top = uy + 'px'; 
-        bat.style.opacity = '1';
+        bat.style.left = ux + 'px'; bat.style.top = uy + 'px'; bat.style.opacity = '1';
 
         const dt = v.currentTime - p.t;
         const err = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
         const dy = p.y - uy;
 
-        let ev = Math.max(0, 114 - (err * 1.6) - (Math.abs(dt) * 80));
-        let la = Math.round(dy * 2.1);
+        let ev = Math.max(0, 115 - (err * 1.5) - (Math.abs(dt) * 80));
+        let la = Math.round(dy * 2.2);
 
-        document.getElementById('ev-val').innerText = ev.toFixed(1) + " MPH";
+        document.getElementById('ev-val').innerText = ev.toFixed(1);
         document.getElementById('la-val').innerText = la + "°";
 
         if (err < 42) {
-            if (la > 10 && la < 38 && ev > 92) {
+            if (la > 8 && la < 35 && ev > 95) {
                 g.runs++; document.getElementById('r-val').innerText = g.runs;
                 addSpray("#efb21e", dt, true);
-            } else if (ev > 65) {
+            } else if (ev > 60) {
                 addSpray("#44ff44", dt, false);
             } else {
                 g.outs++; document.getElementById('o-val').innerText = g.outs;
@@ -159,14 +172,14 @@
             }
         }
         document.getElementById('time-f').innerText = dt < 0 ? "AHEAD" : (dt > 0.2 ? "LATE" : "ON TIME");
-    });
+    }
 
     function addSpray(color, dt, isHR) {
         const dot = document.createElement('div');
         dot.className = 'hit-dot';
         dot.style.background = color;
-        dot.style.left = (50 + (dt * 125)) + "%";
-        dot.style.top = isHR ? "12%" : (Math.random() * 40 + 35) + "%";
+        dot.style.left = (50 + (dt * 130)) + "%";
+        dot.style.top = isHR ? "10%" : (Math.random() * 40 + 30) + "%";
         document.getElementById('field').appendChild(dot);
     }
 </script>
