@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pro Sync - Multi-Pitch</title>
+    <title>MLB Challenge - 8 Pitch Sync</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #video-section { width: 100%; background: #000; flex-shrink: 0; border-bottom: 1px solid #333; }
+        #video-section { width: 100%; background: #000; flex-shrink: 0; border-bottom: 2px solid #333; }
         video { width: 100%; max-height: 45vh; display: block; }
 
         #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 10px; }
-        #results { width: 150px; }
+        #results { width: 160px; }
         #outcome { font-size: 2.2rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; line-height: 1; }
         #timing-fb { font-size: 0.9rem; color: #666; text-transform: uppercase; margin-top: 5px; }
 
-        /* The Nestico Box */
-        #statcast-box { width: 140px; height: 190px; border: 3px solid #fff; position: relative; background: rgba(255,255,255,0.05); }
+        /* Nestico Box */
+        #statcast-box { width: 140px; height: 195px; border: 4px solid #fff; position: relative; background: rgba(255,255,255,0.05); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #pitch-dot { width: 20px; height: 20px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
-        #swing-dot { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
-        #tap-zone { position: absolute; top: -50px; left: -50px; right: -50px; bottom: -50px; z-index: 10; }
+        #pitch-dot { width: 22px; height: 22px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
+        #swing-dot { width: 32px; height: 32px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #tap-zone { position: absolute; top: -60px; left: -60px; right: -60px; bottom: -60px; z-index: 10; }
     </style>
 </head>
 <body>
@@ -33,7 +33,7 @@
     <div id="dashboard">
         <div id="results">
             <h1 id="outcome">READY</h1>
-            <div id="timing-fb">WATCH ZONE</div>
+            <div id="timing-fb">WATCH THE ZONE</div>
         </div>
 
         <div id="statcast-box">
@@ -50,13 +50,17 @@
     const pDot = document.getElementById('pitch-dot');
     const sDot = document.getElementById('swing-dot');
 
-    // --- HARDCODED SEQUENCE ---
-    // Update 't' for the second in the video, 'x' (0-140) and 'y' (0-190) for the box
+    // --- FULL 8-PITCH HARDCODED ARRAY ---
+    // t = seconds, x = 0-140, y = 0-195
     const PITCH_DATA = [
-        { t: 1.25, x: 20,  y: 170, res: "HOME RUN" },
-        { t: 5.40, x: 110, y: 45,  res: "FLY OUT"  },
-        { t: 9.80, x: 70,  y: 100, res: "SINGLE"   },
-        { t: 14.15, x: 30,  y: 140, res: "DOUBLE"   }
+        { t: 0.92,  x: 20,  y: 175, res: "HOME RUN" },
+        { t: 6.40,  x: 110, y: 35,  res: "FLY OUT"  },
+        { t: 10.86, x: 75,  y: 95,  res: "SINGLE"   },
+        { t: 16.08, x: 100, y: 80,  res: "POP UP"   },
+        { t: 21.50, x: 105, y: 105, res: "GROUNDER" },
+        { t: 28.03, x: 10,  y: 150, res: "BALL"     },
+        { t: 33.00, x: 25,  y: 110, res: "DOUBLE"   },
+        { t: 36.17, x: 10,  y: 130, res: "BALL"     }
     ];
 
     let currentPitch = null;
@@ -64,8 +68,8 @@
     video.addEventListener('timeupdate', () => {
         const now = video.currentTime;
         
-        // Find if we are currently at a pitch timestamp
-        const active = PITCH_DATA.find(p => Math.abs(now - p.t) < 0.25);
+        // Match current time to pitch time (with 0.3s window)
+        const active = PITCH_DATA.find(p => Math.abs(now - p.t) < 0.3);
 
         if (active) {
             currentPitch = active;
@@ -75,8 +79,12 @@
         } else {
             pDot.style.opacity = "0";
             currentPitch = null;
-            // Clean up swing dot on loop
-            if (now < 0.1) sDot.style.display = "none";
+            // Clear swing on loop
+            if (now < 0.2) {
+                sDot.style.display = "none";
+                outcome.innerText = "READY";
+                outcome.style.color = "#00ffcc";
+            }
         }
     });
 
@@ -92,19 +100,20 @@
 
         if (currentPitch) {
             const diff = Math.abs(video.currentTime - currentPitch.t);
-            if (diff < 0.2) {
+            // Hit logic: 0.25s timing window
+            if (diff < 0.25) {
                 outcome.innerText = currentPitch.res;
                 outcome.style.color = "#00ffcc";
-                timingFb.innerText = "PERFECT";
+                timingFb.innerText = "PERFECT TIMING";
             } else {
                 outcome.innerText = "WHIFF";
                 outcome.style.color = "#ff4d4d";
-                timingFb.innerText = video.currentTime < currentPitch.t ? "EARLY" : "LATE";
+                timingFb.innerText = video.currentTime < currentPitch.t ? "TOO EARLY" : "TOO LATE";
             }
         } else {
             outcome.innerText = "MISS";
             outcome.style.color = "#ff4d4d";
-            timingFb.innerText = "NO PITCH";
+            timingFb.innerText = "OUT OF SEQUENCE";
         }
     });
 </script>
