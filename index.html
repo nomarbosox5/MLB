@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Baseball Classic Pro</title>
+    <title>Cronin Baseball: Thumb Pro</title>
     <style>
         :root { --gold: #f1c40f; --blue: #3498db; --grass: #1b3318; --board: #111; }
         body { 
@@ -11,63 +11,71 @@
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
 
-        #header { height: 2.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #444; letter-spacing: 1px; }
-        #v-frame { width: 100%; height: 58.5vh; overflow: hidden; position: relative; }
+        #header { height: 2vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: #333; }
+        #v-frame { width: 100%; height: 58vh; overflow: hidden; position: relative; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
         #deck { 
-            height: 39vh; display: grid; grid-template-columns: 1fr 1fr; 
-            background: #050505; padding: 10px; gap: 10px;
+            height: 40vh; display: grid; grid-template-columns: 1.1fr 0.9fr; 
+            background: #080808; padding: 10px; gap: 12px;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
 
+        /* RESULT CARD */
         .card-strip {
-            width: 100%; background: var(--board); border: 1px solid #333; border-radius: 4px;
-            padding: 5px; display: flex; flex-direction: column; gap: 4px;
+            width: 100%; background: var(--board); border: 1px solid #333; border-radius: 6px;
+            padding: 8px; display: flex; flex-direction: column; gap: 6px;
         }
-        .stats-row { display: flex; justify-content: space-around; font-size: 12px; font-weight: 900; }
-        .diamond-row { display: flex; justify-content: center; align-items: center; gap: 15px; border-top: 1px solid #222; padding-top: 4px; }
+        .stats-row { display: flex; justify-content: space-around; font-size: 14px; font-weight: 900; }
+        .diamond-row { display: flex; justify-content: center; align-items: center; gap: 12px; border-top: 1px solid #222; padding-top: 6px; }
         
-        #mini-diamond { width: 24px; height: 24px; position: relative; transform: rotate(45deg); }
-        .m-base { position: absolute; width: 5px; height: 5px; border: 1px solid #444; background: #222; }
+        #mini-diamond { width: 26px; height: 26px; position: relative; transform: rotate(45deg); }
+        .m-base { position: absolute; width: 6px; height: 6px; border: 1px solid #444; background: #222; }
         #mb-1 { top: 0; right: 0; } #mb-2 { top: 0; left: 0; } #mb-3 { bottom: 0; left: 0; }
-        .m-on { background: var(--gold); border-color: #fff; box-shadow: 0 0 8px var(--gold); }
+        .m-on { background: var(--gold); border-color: #fff; box-shadow: 0 0 10px var(--gold); }
 
-        #res-main { color: var(--gold); font-size: 11px; font-weight: 900; }
+        #res-main { color: var(--gold); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 
+        /* ARC FIELD */
         #field-container { 
-            width: 100%; flex-grow: 1; background: var(--grass); border-radius: 4px; 
-            position: relative; overflow: hidden; margin-top: 5px; border: 1px solid #222;
+            width: 100%; flex-grow: 1; background: var(--grass); border-radius: 50% 50% 0 0; 
+            position: relative; overflow: hidden; margin-top: 8px; border: 1px solid #222;
+            border-bottom: none;
         }
-        /* Foul Lines */
-        .f-line { position: absolute; bottom: 0; width: 1.5px; height: 150%; background: rgba(255,255,255,0.2); transform-origin: bottom; left: 50%; }
+        .f-line { position: absolute; bottom: 0; width: 1.5px; height: 100%; background: rgba(255,255,255,0.3); transform-origin: bottom; left: 50%; }
         
-        /* Hit Visuals */
         .hit-dot {
-            position: absolute; width: 18px; height: 18px; background: #000;
+            position: absolute; width: 16px; height: 16px; background: #000;
             border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; font-size: 7px; font-weight: 900; transform: translate(-50%, -50%);
+            justify-content: center; font-size: 6px; font-weight: 900; transform: translate(-50%, -50%);
             z-index: 10;
         }
         .hit-path-line {
-            position: absolute; background: rgba(255,255,255,0.4); width: 1.5px;
+            position: absolute; background: linear-gradient(to top, var(--gold), transparent); width: 1.5px;
             transform-origin: bottom center; bottom: 0; left: 50%; z-index: 5;
         }
 
+        /* THUMB-OPTIMIZED STRIKE ZONE */
         #strike-zone { 
-            width: 120px; height: 155px; border: 1.5px solid rgba(255,255,255,0.2); 
-            background: rgba(255,255,255,0.03); position: relative; touch-action: none; 
-            border-radius: 4px; margin-top: -15px;
+            width: 135px; height: 170px; border: 2px solid rgba(255,255,255,0.2); 
+            background: rgba(0,0,0,0.4); position: relative; touch-action: none; 
+            border-radius: 8px; margin-top: 10px; /* Lowered for thumb */
+        }
+        #tap-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 10px; font-weight: 900; color: rgba(255,255,255,0.2);
+            letter-spacing: 2px; pointer-events: none;
         }
         
-        .ball-asset { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 8px #fff; }
-        .bat-asset { position: absolute; width: 16px; height: 16px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #000; }
+        .ball-asset { position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 12px #fff; }
+        .bat-asset { position: absolute; width: 20px; height: 20px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #000; }
     </style>
 </head>
 <body>
 
-<div id="header">CRONIN BROADCAST CLASSIC</div>
+<div id="header">CRONIN PRO BROADCAST</div>
 <div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
@@ -96,12 +104,12 @@
 
     <div class="panel">
         <div id="strike-zone">
+            <div id="tap-hint">TAP TO HIT</div>
             <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
             <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
             <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
             <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
         </div>
-        <div style="font-size: 8px; color: #444; font-weight: 900; margin-bottom: 5px;">STRIKE ZONE</div>
     </div>
 </div>
 
@@ -142,7 +150,7 @@
         const ball = document.createElement('div'); ball.className='ball-asset';
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
-        if(dist < 56) {
+        if(dist < 58) {
             const la = ((ty - py) / 20) * 45; 
             const ang = ((tx - px) * 1.6) + (tDiff * 140); 
             const ev = 110 - (dist * 1.1) - (Math.abs(tDiff) * 300);
@@ -156,33 +164,36 @@
 
     function handleHit(ft, angle, la) {
         let res = "OUT"; let move = 0; let tag = "OUT";
-        if(Math.abs(angle) > 50) { addStrike("FOUL"); return; } 
+        if(Math.abs(angle) > 45) { addStrike("FOUL"); return; } 
 
         if (ft < 112) { res = la < 0 ? "GROUND OUT" : "POP OUT"; tag = "OUT"; }
         else if (ft < 228) { res = "SINGLE"; move = 1; tag = "1B"; }
         else if (ft < 328) { res = "DOUBLE"; move = 2; tag = "2B"; }
         else {
-            let fence = (Math.abs(angle) > 35) ? 338 : 405;
+            let fence = (Math.abs(angle) > 30) ? 335 : 402;
             if (ft >= fence) { res = "HOME RUN"; move = 4; tag = "HR"; }
             else { res = "TRIPLE"; move = 3; tag = "3B"; }
         }
         
         resMain.innerText = res;
         
-        // Path Line
+        // Proportional Scaling (assuming 420ft max visual)
+        const scale = Math.min(ft, 420) / 420;
+        const visualDist = scale * 95; // 95% of field height
+
         const pathLine = document.createElement('div');
         pathLine.className = 'hit-path-line';
-        const h = Math.min(ft, 420) / 4.6;
-        pathLine.style.height = h + "px";
-        pathLine.style.transform = `rotate(${angle * 0.75}deg)`;
+        pathLine.style.height = visualDist + "%";
+        pathLine.style.transform = `rotate(${angle * 0.8}deg)`;
         field.appendChild(pathLine);
 
-        // Result Dot
         const dot = document.createElement('div');
         dot.className = 'hit-dot';
         dot.innerText = tag;
-        dot.style.left = (50 + (angle * 0.85)) + "%";
-        dot.style.top = (95 - (Math.min(ft, 420)/4.6)) + "%";
+        // Trig for dot position based on angle and scaled distance
+        const rad = (90 - (angle * 0.8)) * Math.PI / 180;
+        dot.style.left = (50 + (visualDist * Math.cos(rad))) + "%";
+        dot.style.bottom = (visualDist * Math.sin(rad)) + "%";
         field.appendChild(dot);
 
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
@@ -201,10 +212,10 @@
     function addStrike(reason) {
         if (reason === "FOUL") {
             if (g.s < 2) g.s++;
-            resMain.innerText = "FOUL";
+            resMain.innerText = "FOUL BALL";
         } else {
             g.s++;
-            resMain.innerText = reason === "WHIFF" ? "STRIKE (K)" : "STRIKE";
+            resMain.innerText = reason === "WHIFF" ? "STRIKE" : "STRIKE";
             if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; resMain.innerText = "STRIKEOUT"; checkState(); }
         }
     }
@@ -221,7 +232,7 @@
     }
 
     function checkState() {
-        if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resMain.innerText = "3 OUTS"; }
+        if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resMain.innerText = "SIDE RETIRED"; }
     }
 
     function updateUI() {
