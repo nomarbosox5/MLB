@@ -3,51 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Mobile Pro</title>
+    <title>Statcast Elite MVP</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@400;900&display=swap');
-        :root { --gold: #fcc419; --bg: #000; --neon: #00f2ff; --red: #ff3e3e; --gray: #1a1a1a; }
+        :root { --gold: #fcc419; --bg: #000; --red: #ff3e3e; --gray: #121212; --border: #222; }
         
         * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
         body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* 1. TOP SECTION: THE VIDEO */
-        #v-area { height: 45vh; position: relative; background: #000; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; }
+        /* VIDEO FEED SECTION */
+        #v-area { height: 45vh; position: relative; background: #000; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border); }
         video { width: 100%; height: 100%; object-fit: cover; }
-        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .start-btn { border: 1px solid #fff; color: #fff; padding: 12px 24px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .start-btn { border: 1px solid #fff; color: #fff; padding: 12px 24px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
 
-        /* 2. BOTTOM SECTION: SPLIT DASHBOARD */
+        /* ANALYTICS & INTERACTION DASHBOARD */
         #dashboard { flex-grow: 1; display: flex; width: 100%; }
 
-        /* Left Column: Data Analytics */
-        #stats-panel { width: 50%; padding: 15px; border-right: 1px solid #222; display: flex; flex-direction: column; gap: 15px; }
-        .data-row { border-bottom: 1px solid #222; padding-bottom: 8px; }
-        .label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .val { font-family: 'JetBrains Mono'; font-size: 18px; color: #fff; }
-        .val.highlight { color: var(--gold); font-size: 22px; }
+        /* Left Panel: Detailed Analytics */
+        #stats-panel { width: 50%; padding: 20px 15px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 20px; }
+        .data-row { border-bottom: 1px solid #1a1a1a; padding-bottom: 10px; }
+        .label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .val { font-family: 'JetBrains Mono'; font-size: 18px; color: #fff; line-height: 1.2; }
+        .val.highlight { color: var(--gold); font-size: 24px; }
         
-        /* Right Column: Interaction & Scorebug */
-        #action-panel { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; background: #050505; }
+        /* Right Panel: Scorebug & Touch Grid */
+        #action-panel { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 15px; background: #050505; }
         
-        /* Mini Scorebug */
-        #mini-bug { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--gray); border-radius: 4px; width: 90%; }
-        .count-group { display: flex; flex-direction: column; gap: 3px; }
+        /* Integrated Scorebug */
+        #scorebug { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: var(--gray); padding: 10px; border-radius: 4px; width: 90%; margin-bottom: 20px;
+            border: 1px solid #1a1a1a;
+        }
+        .count-stack { display: flex; flex-direction: column; gap: 4px; }
         .c-row { display: flex; align-items: center; font-size: 9px; color: #444; font-weight: 900; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #000; margin-left: 4px; border: 1px solid #333; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #000; margin-left: 4px; border: 1px solid #222; }
         .dot.active { background: var(--gold); border: none; box-shadow: 0 0 5px var(--gold); }
-        .diamond { position: relative; width: 30px; height: 30px; transform: rotate(45deg); margin-left: 10px; }
-        .base { position: absolute; width: 9px; height: 9px; background: #333; border: 1px solid #444; }
+        .dot.active-o { background: var(--red); border: none; box-shadow: 0 0 5px var(--red); }
+        
+        .diamond-wrap { position: relative; width: 32px; height: 32px; transform: rotate(45deg); margin-left: 5px; }
+        .base { position: absolute; width: 10px; height: 10px; background: #222; border: 1px solid #333; }
         #b1 { top: 0; right: 0; } #b2 { top: 0; left: 0; } #b3 { bottom: 0; left: 0; }
 
-        /* The Grid */
-        #grid { width: 160px; height: 160px; background: #0a0a0a; border: 1px solid #333; position: relative; margin-top: 10px; }
-        #strike-box { position: absolute; left: 25%; top: 25%; width: 50%; height: 50%; border: 1px solid rgba(255,255,255,0.1); }
+        /* Interaction Grid */
+        #grid { width: 160px; height: 160px; background: #080808; border: 1px solid #222; position: relative; }
+        #strike-zone { position: absolute; left: 25%; top: 25%; width: 50%; height: 50%; border: 1px solid rgba(255,255,255,0.08); }
 
-        /* Markers */
+        /* Ball & Bat Visuals */
         .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
-        #ball { width: 12px; height: 12px; background: #fff; box-shadow: 0 0 10px #fff; z-index: 10; }
-        #bat { width: 34px; height: 34px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.15); z-index: 11; }
+        #ball { width: 12px; height: 12px; background: #fff; box-shadow: 0 0 12px #fff; z-index: 10; transition: opacity 0.1s; }
+        #bat { width: 36px; height: 36px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.1); z-index: 11; }
     </style>
 </head>
 <body>
@@ -76,18 +82,19 @@
     </div>
 
     <div id="action-panel">
-        <div id="mini-bug">
-            <div class="count-group">
+        <div id="scorebug">
+            <div class="count-stack">
                 <div class="c-row">B <div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
                 <div class="c-row">S <div class="dot" id="s1"></div><div class="dot" id="s2"></div><div class="dot" id="s3"></div></div>
+                <div class="c-row">O <div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
             </div>
-            <div class="diamond">
+            <div class="diamond-wrap">
                 <div class="base" id="b2"></div><div class="base" id="b1"></div><div class="base" id="b3"></div>
             </div>
         </div>
 
         <div id="grid" onpointerdown="handleTap(event)">
-            <div id="strike-box"></div>
+            <div id="strike-zone"></div>
             <div id="ball" class="marker"></div>
             <div id="bat" class="marker"></div>
         </div>
@@ -104,7 +111,7 @@
     ];
 
     let state = { idx: -1, strikes: 0 };
-    const getX = (val) => 80 + (val * 35); // Adjusted for smaller grid
+    const getX = (val) => 80 + (val * 35);
     const getY = (val) => 80 - (val * 35);
 
     function startApp() { document.getElementById('overlay').style.display = 'none'; v.play(); }
@@ -137,8 +144,8 @@
             const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
             const dt = v.currentTime - p.t;
 
-            if (dist < 38) {
-                const evVal = Math.max(0, 114 - (dist * 1.5)).toFixed(1);
+            if (dist < 40) {
+                const evVal = Math.max(0, 114 - (dist * 1.6)).toFixed(1);
                 document.getElementById('ev').innerText = evVal + " MPH";
                 document.getElementById('timing').innerText = Math.abs(dt) < 0.1 ? "GOOD" : (dt < 0 ? "EARLY" : "LATE");
                 document.getElementById('result').innerText = dist < 12 ? "SQUARED UP" : "SOLID";
