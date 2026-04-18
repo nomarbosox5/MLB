@@ -2,86 +2,188 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>METAVERSE STATCAST • T-Mobile Park Mode</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Statcast Elite: Tap Challenge</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;900&display=swap');
         
-        body {
-            background: #000;
-            font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
+        :root { 
+            --gold: #fcc419; --red: #ff3b30; --glass: rgba(0, 0, 0, 0.85);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-right: env(safe-area-inset-right);
         }
-        
-        .video-container {
+
+        html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; margin: 0; background: #000; }
+        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
+
+        /* BROADCAST BACKGROUND */
+        #video-layer { width: 100vw; height: 100vh; position: relative; z-index: 1; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* STATCAST HUD (BOTTOM-RIGHT) */
+        #hud-anchor {
+            position: absolute;
+            bottom: calc(30px + var(--safe-bottom));
+            right: calc(20px + var(--safe-right));
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        #data-card {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            border-left: 5px solid var(--gold);
+            padding: 15px 20px;
+            width: 210px;
+            border-radius: 2px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .stat-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .label { font-family: 'Inter'; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+        .value { font-family: 'Orbitron'; font-size: 18px; color: #fff; }
+        #call-result { font-size: 24px; font-weight: 900; color: var(--gold); margin-top: 5px; }
+
+        /* INTERACTIVE ZONE */
+        #interactive-zone {
+            width: 180px;
+            height: 240px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
-            box-shadow: 0 0 30px #22d3ee;
+            border-radius: 4px;
         }
-        
-        .blue-grid {
+
+        /* THE STRINGS (STRIKE ZONE) */
+        #strike-box {
             position: absolute;
-            inset: 0;
-            background: repeating-linear-gradient(
-                transparent 0px,
-                transparent 33.33%,
-                rgba(103, 232, 249, 0.65) 33.33%,
-                rgba(103, 232, 249, 0.65) 33.4%
-            ),
-            repeating-linear-gradient(
-                90deg,
-                transparent 0px,
-                transparent 33.33%,
-                rgba(103, 232, 249, 0.65) 33.33%,
-                rgba(103, 232, 249, 0.65) 33.4%
-            );
+            left: 54px; top: 60px; /* 0.30 to 0.70 X | 0.35 to 0.75 Y */
+            width: 72px; height: 96px;
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.01);
             pointer-events: none;
-            z-index: 10;
         }
-        
-        .red-1 {
-            position: absolute;
-            font-size: 6rem;
-            font-weight: 900;
-            color: #ef4444;
-            text-shadow: 0 0 20px #ef4444;
-            z-index: 20;
-            pointer-events: none;
-            animation: pop 1.2s forwards;
-        }
-        
-        @keyframes pop {
-            0% { transform: scale(0.4); opacity: 0; }
-            30% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 0.9; }
-        }
+
+        /* PITCH MARKERS */
+        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
+        #pitch-tracker { width: 14px; height: 14px; background: var(--red); box-shadow: 0 0 15px var(--red); z-index: 10; }
+        #swing-tracker { width: 35px; height: 35px; border: 2px solid var(--gold); background: rgba(252,196,25,0.2); z-index: 11; transition: opacity 0.1s; }
     </style>
 </head>
-<body class="bg-black text-white">
+<body>
 
-<div class="flex flex-col h-screen">
-    <!-- VIDEO -->
-    <div class="flex-1 relative video-container">
-        <video id="pitch-video" 
-               class="w-full h-full object-cover"
-               autoplay loop muted playsinline
-               src="ScreenRecording_04-17-2026 18-27-36_1.mp4">
-        </video>
-        
-        <!-- Blue Grid Overlay (exactly like your screenshots) -->
-        <div id="blue-grid" class="blue-grid"></div>
-        
-        <!-- Red "1" Indicator -->
-        <div id="red-one" class="red-1 hidden">1</div>
+<div id="video-layer">
+    <video id="broadcast" playsinline autoplay muted loop>
+        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+    </video>
+
+    <div id="hud-anchor">
+        <div id="data-card">
+            <div class="stat-line"><div class="label">Exit Velo</div><div id="velo-out" class="value">---</div></div>
+            <div class="stat-line"><div class="label">Timing</div><div id="time-out" class="value">---</div></div>
+            <div id="call-result">LIVE</div>
+        </div>
+
+        <div id="interactive-zone" onpointerdown="handleSwing(event)">
+            <div id="strike-box"></div>
+            <div id="pitch-tracker" class="marker"></div>
+            <div id="swing-tracker" class="marker"></div>
+        </div>
     </div>
+</div>
 
-    <!-- BOTTOM STATCAST PANEL -->
-    <div class="bg-black border-t-4 border-cyan-400 grid grid-cols-2 divide-x divide-cyan-400/30">
-        
-        <!-- LEFT -->
-        <div class="p-6 space-y-6">
-            <div>
-                <div class="text-cyan-400 text-xs tracking-widest">EXIT VELO</div>
-                <div id="exit-velo" class="text-7xl font-bold text-yellow-400">0.0</div>
-                <div class="text-xs text-gray-400 -mt-1">MPH</div>
-            </div
+<script>
+    const video = document.getElementById('broadcast');
+    
+    // SEQUENCE DATA (0-1 Normalized Coordinates)
+    const SEQUENCE = [
+        { t: 0.92,  x: 0.20, y: 0.55 }, { t: 6.40,  x: 0.25, y: 0.62 }, 
+        { t: 10.86, x: 0.42, y: 0.52 }, { t: 16.08, x: 0.42, y: 0.50 },
+        { t: 21.50, x: 0.48, y: 0.48 }, { t: 28.03, x: 0.18, y: 0.55 },
+        { t: 36.17, x: 0.22, y: 0.52 }, { t: 41.84, x: 0.20, y: 0.50 }
+    ];
+
+    let activePitchIdx = -1;
+    let swungThisPitch = false;
+
+    // Map Normalized to Pixels (180x240)
+    const toPxX = (v) => v * 180;
+    const toPxY = (v) => (1 - v) * 240; 
+
+    video.ontimeupdate = () => {
+        const now = video.currentTime;
+        let found = -1;
+
+        for (let i = 0; i < SEQUENCE.length; i++) {
+            const p = SEQUENCE[i];
+            const next = SEQUENCE[i+1];
+            // THE HALFWAY RESET LOGIC
+            const resetTime = next ? p.t + (next.t - p.t) / 2 : p.t + 2.0;
+
+            if (now >= p.t - 0.25 && now < resetTime) {
+                found = i;
+                renderPitch(p);
+            }
+        }
+
+        if (found === -1) resetHUD();
+        if (found !== activePitchIdx) {
+            activePitchIdx = found;
+            swungThisPitch = false;
+        }
+    };
+
+    function renderPitch(p) {
+        const dot = document.getElementById('pitch-tracker');
+        dot.style.left = toPxX(p.x) + 'px';
+        dot.style.top = toPxY(p.y) + 'px';
+        dot.style.opacity = 1;
+
+        // Passive Umpire: Strike Zone check
+        const strike = (p.x >= 0.3 && p.x <= 0.7 && p.y >= 0.35 && p.y <= 0.75);
+        const resLabel = document.getElementById('call-result');
+        resLabel.innerText = strike ? "STRIKE" : "BALL";
+        resLabel.style.color = strike ? "var(--gold)" : "#fff";
+    }
+
+    function resetHUD() {
+        document.getElementById('pitch-tracker').style.opacity = 0;
+        document.getElementById('swing-tracker').style.opacity = 0;
+        document.getElementById('call-result').innerText = "LIVE";
+        document.getElementById('call-result').style.color = "var(--gold)";
+        document.getElementById('velo-out').innerText = "---";
+        document.getElementById('time-out').innerText = "---";
+    }
+
+    function handleSwing(e) {
+        if (activePitchIdx === -1 || swungThisPitch) return;
+
+        const rect = document.getElementById('interactive-zone').getBoundingClientRect();
+        const touchX = e.clientX - rect.left;
+        const touchY = e.clientY - rect.top;
+
+        const sDot = document.getElementById('swing-tracker');
+        sDot.style.left = touchX + 'px'; sDot.style.top = touchY + 'px'; sDot.style.opacity = 1;
+
+        const p = SEQUENCE[activePitchIdx];
+        const dist = Math.sqrt(Math.pow(touchX - toPxX(p.x), 2) + Math.pow(touchY - toPxY(p.y), 2));
+
+        // Interaction Results
+        if (dist < 48) {
+            const mph = (112 - (dist * 1.6)).toFixed(1);
+            const diff = video.currentTime - p.t;
+            document.getElementById('velo-out').innerText = mph + " MPH";
+            document.getElementById('time-out').innerText = Math.abs(diff) < 0.1 ? "PERFECT" : (diff < 0 ? "EARLY" : "LATE");
+        } else {
+            document.getElementById('velo-out').innerText = "0.0 MPH";
+            document.getElementById('time-out').innerText = "WHIFF";
+        }
+
+        swungThisPitch = true;
+    }
+</script>
+</body>
+</html>
