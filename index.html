@@ -3,54 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Statcast Pro</title>
+    <title>Cronin Statcast Elite</title>
     <style>
-        :root { --gold: #f1c40f; --aws-blue: #00a1e0; --bg: #050505; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', -apple-system, sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
         
-        /* 30% Left/Right Side Crop - Full Vertical */
-        #v-frame { width: 100%; height: 50vh; overflow: hidden; position: relative; background: #000; border-bottom: 2px solid #222; }
+        /* Video: 30% Left/Right Crop, Full Height Top/Bottom */
+        #v-frame { width: 100%; height: 55vh; overflow: hidden; position: relative; background: #000; border-bottom: 2px solid #222; }
         video { width: 160%; height: 100%; object-fit: cover; margin-left: -30%; }
 
-        /* Bottom Control Deck */
+        /* Control Deck: Clustered to the Right */
         #deck { 
-            height: 50vh; display: grid; grid-template-columns: 1fr 1.2fr; 
-            background: var(--bg); padding: 15px; gap: 15px;
+            height: 45vh; display: grid; grid-template-columns: 0.8fr 1.2fr; 
+            background: var(--bg); padding: 15px; gap: 10px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Branding & Summary (Left Bottom) */
-        .info-side { display: flex; flex-direction: column; justify-content: space-between; }
+        /* Left Side: Branding and Scoring */
+        .left-panel { display: flex; flex-direction: column; justify-content: space-between; padding-top: 5px; }
         .branding { font-weight: 900; letter-spacing: 3px; color: var(--gold); font-size: 14px; }
-        
-        /* The "Everything" HUD (Right Bottom) */
-        .hud-side { 
-            display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+        .score-box { font-size: 32px; font-weight: 900; }
+
+        /* Right Side: Clustered HUD */
+        .right-hud { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+
+        /* Stat Cards */
+        #stat-panel { width: 100%; opacity: 0; transition: 0.3s; text-align: right; }
+        .stat-card { background: rgba(255,255,255,0.05); border-right: 4px solid var(--orange); padding: 6px 12px; margin-bottom: 4px; }
+        .s-label { font-size: 9px; color: #888; text-transform: uppercase; }
+        .s-val { font-size: 18px; font-weight: 900; }
+
+        /* Combined Diamond & Spray Chart */
+        #graphic-container { 
+            position: relative; width: 140px; height: 110px; 
+            background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid #222;
         }
-
-        /* Technical Data Cards */
-        #stats-overlay { width: 100%; opacity: 0; transition: 0.3s; text-align: right; }
-        .metric-row { border-right: 4px solid var(--aws-blue); background: rgba(255,255,255,0.05); padding: 5px 12px; margin-bottom: 5px; }
-        .m-label { font-size: 9px; color: #888; text-transform: uppercase; }
-        .m-val { font-size: 18px; font-weight: 900; color: #fff; }
-
-        /* Diamond UI with Runners */
-        .diamond-wrap { position: relative; width: 80px; height: 80px; margin-top: 5px; }
-        .base { position: absolute; width: 12px; height: 12px; background: #222; transform: rotate(45deg); border: 1px solid #444; transition: 0.3s; }
-        .runner { background: var(--gold) !important; box-shadow: 0 0 10px var(--gold); border-color: #fff; }
-        #b1 { top: 34px; right: 0; } #b2 { top: 0; left: 34px; } #b3 { top: 34px; left: 0; }
-        #home { bottom: 0; left: 34px; clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%); background: #eee; transform: none; width: 14px; height: 14px; }
+        #spray-line {
+            position: absolute; bottom: 15px; left: 50%; width: 3px; 
+            background: linear-gradient(to top, var(--orange), #fff); 
+            transform-origin: bottom center; opacity: 0; z-index: 5;
+            box-shadow: 0 0 10px var(--orange);
+        }
+        .diamond-mini { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; }
+        .base { position: absolute; width: 8px; height: 8px; background: #222; transform: rotate(45deg); border: 1px solid #444; transition: 0.3s; }
+        .runner { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); border-color: #fff; }
+        #b1 { top: 16px; right: 0; } #b2 { top: 0; left: 16px; } #b3 { top: 16px; left: 0; }
 
         /* Strike Zone */
         #sz { 
-            width: 130px; height: 170px; border: 1px solid rgba(255,255,255,0.2); 
-            position: relative; background: rgba(255,255,255,0.03); touch-action: none;
+            width: 140px; height: 180px; border: 1px solid rgba(255,255,255,0.2); 
+            position: relative; background: rgba(255,255,255,0.02); touch-action: none;
         }
-        .grid { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
-        .p-node { position: absolute; width: 22px; height: 22px; background: #ff4757; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); font-weight: 900; font-size: 11px; box-shadow: 0 0 15px rgba(255,71,87,0.5); }
+        .grid { position: absolute; background: rgba(255,255,255,0.05); pointer-events: none; }
+        .node { position: absolute; width: 22px; height: 22px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); font-weight: 900; font-size: 11px; color: #fff; box-shadow: 0 0 10px rgba(231,76,60,0.5); }
     </style>
 </head>
 <body>
@@ -60,31 +68,32 @@
 </div>
 
 <div id="deck">
-    <div class="info-side">
+    <div class="left-panel">
         <div class="branding">CRONIN BASEBALL</div>
-        <div style="font-size: 12px; color: #555;">GHOST RUNNER SYSTEM v2.1</div>
-        <div class="m-val" style="font-size: 32px;">RUNS: <span id="r-total">0</span></div>
+        <div class="score-box">RUNS: <span id="r-total">0</span></div>
     </div>
 
-    <div class="hud-side">
-        <div id="stats-overlay">
-            <div class="metric-row"><div class="m-label">Exit Velocity</div><div class="m-val" id="ev" style="color:var(--gold)">0 MPH</div></div>
-            <div class="metric-row"><div class="m-label">Distance</div><div class="m-val" id="dist">0 FT</div></div>
-            <div class="metric-row" id="hit-type" style="border-right-color: var(--gold);"><div class="m-label">Result</div><div class="m-val">---</div></div>
+    <div class="right-hud">
+        <div id="stat-panel">
+            <div class="stat-card"><div class="s-label">Exit Velocity</div><div class="s-val" id="ev">0.0 MPH</div></div>
+            <div class="stat-card" style="border-right-color: var(--gold);"><div class="s-label">Result</div><div class="s-val" id="res">---</div></div>
         </div>
 
-        <div class="diamond-wrap">
-            <div id="b1" class="base"></div>
-            <div id="b2" class="base"></div>
-            <div id="b3" class="base"></div>
-            <div id="home"></div>
+        <div id="graphic-container">
+            <div id="spray-line"></div>
+            <div class="diamond-mini">
+                <div id="b1" class="base"></div>
+                <div id="b2" class="base"></div>
+                <div id="b3" class="base"></div>
+            </div>
+            <div style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); font-size:8px; color:#444;">TRAJECTORY & RUNNERS</div>
         </div>
 
         <div id="sz">
-            <div class="grid" style="width:1px; height:100%; left:33%"></div>
-            <div class="grid" style="width:1px; height:100%; left:66%"></div>
-            <div class="grid" style="height:1px; width:100%; top:33%"></div>
-            <div class="grid" style="height:1px; width:100%; top:66%"></div>
+            <div class="grid" style="width:1px; height:100%; left:33.3%"></div>
+            <div class="grid" style="width:1px; height:100%; left:66.6%"></div>
+            <div class="grid" style="height:1px; width:100%; top:33.3%"></div>
+            <div class="grid" style="height:1px; width:100%; top:66.6%"></div>
         </div>
     </div>
 </div>
@@ -92,7 +101,8 @@
 <script>
     const v = document.getElementById('v');
     const sz = document.getElementById('sz');
-    const stats = document.getElementById('stats-overlay');
+    const panel = document.getElementById('stat-panel');
+    const spray = document.getElementById('spray-line');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -103,7 +113,7 @@
 
     let game = { runs: 0, bases: [false, false, false], locked: false };
 
-    function updateRunners() {
+    function syncUI() {
         document.getElementById('b1').className = `base ${game.bases[0] ? 'runner' : ''}`;
         document.getElementById('b2').className = `base ${game.bases[1] ? 'runner' : ''}`;
         document.getElementById('b3').className = `base ${game.bases[2] ? 'runner' : ''}`;
@@ -113,69 +123,71 @@
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if(game.locked) return;
-        const r = sz.getBoundingClientRect();
-        const t = e.touches[0];
-        doSwing(t.clientX - r.left, t.clientY - r.top);
+        const rect = sz.getBoundingClientRect();
+        const touch = e.touches[0];
+        handleSwing(touch.clientX - rect.left, touch.clientY - rect.top);
     });
 
-    function doSwing(tx, ty) {
+    function handleSwing(tx, ty) {
         game.locked = true;
-        const now = v.currentTime;
-        const p = pitches.find(p => Math.abs(now - p.t) < 0.65);
+        const time = v.currentTime;
+        const p = pitches.find(p => Math.abs(time - p.t) < 0.65);
 
-        sz.querySelectorAll('.p-node').forEach(n => n.remove());
+        sz.querySelectorAll('.node').forEach(n => n.remove());
 
         if(p) {
-            const px = ((p.x + 0.75) / 1.5) * 130;
-            const py = ((1.0 - p.y) / 2.0) * 170;
-            const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
+            const px = ((p.x + 0.75) / 1.5) * 140;
+            const py = ((1.0 - p.y) / 2.0) * 180;
+            const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
             
-            const node = document.createElement('div'); node.className = 'p-node'; node.innerText = '1';
+            const node = document.createElement('div'); node.className = 'node'; node.innerText = '1';
             node.style.left = px+'px'; node.style.top = py+'px'; sz.appendChild(node);
 
-            if(d < 38) {
-                const velo = Math.floor(115 - d);
+            if(dist < 40) {
+                const velo = Math.floor(115 - dist);
                 const ft = Math.floor(velo * 3.8);
-                handleHit(ft, velo);
+                showHit(ft, velo, tx-px);
             }
         }
     }
 
-    function handleHit(ft, velo) {
-        stats.style.opacity = 1;
-        document.getElementById('ev').innerText = velo + ".2 MPH";
-        document.getElementById('dist').innerText = ft + " FT";
+    function showHit(ft, velo, angle) {
+        panel.style.opacity = 1;
+        spray.style.opacity = 1;
+        spray.style.height = (ft/4.5) + 'px';
+        spray.style.transform = `translateX(-50%) rotate(${angle*2.2}deg)`;
         
-        let bases = 0;
-        let label = "FLY OUT";
+        document.getElementById('ev').innerText = velo + ".4 MPH";
         
-        if(ft >= 400) { bases = 4; label = "HOME RUN"; }
-        else if(ft >= 350) { bases = 3; label = "TRIPLE"; }
-        else if(ft >= 300) { bases = 2; label = "DOUBLE"; }
-        else if(ft >= 200) { bases = 1; label = "SINGLE"; }
+        let move = 0;
+        let txt = "FLY OUT";
+        if(ft >= 400) { move = 4; txt = "HOME RUN"; }
+        else if(ft >= 350) { move = 3; txt = "TRIPLE"; }
+        else if(ft >= 300) { move = 2; txt = "DOUBLE"; }
+        else if(ft >= 200) { move = 1; txt = "SINGLE"; }
 
-        document.querySelector('#hit-type .m-val').innerText = label;
+        document.getElementById('res').innerText = txt + " (" + ft + "FT)";
 
-        // Move runners
-        for(let i=0; i < bases; i++) {
+        for(let i=0; i < move; i++) {
             if(game.bases[2]) game.runs++;
             game.bases[2] = game.bases[1];
             game.bases[1] = game.bases[0];
-            game.bases[0] = (i === 0 && bases < 4);
+            game.bases[0] = (i === 0 && move < 4);
         }
-        updateRunners();
+        syncUI();
     }
 
     setInterval(() => {
         const now = v.currentTime;
-        if (now < 0.5 || pitches.some(p => p.t > now && p.t - now < 0.5)) {
+        if (now < 0.4 || pitches.some(p => p.t > now && p.t - now < 0.5)) {
             game.locked = false;
-            stats.style.opacity = 0;
-            if(now < 0.3) sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33%"></div><div class="grid" style="width:1px; height:100%; left:66%"></div><div class="grid" style="height:1px; width:100%; top:33%"></div><div class="grid" style="height:1px; width:100%; top:66%"></div>';
+            panel.style.opacity = 0;
+            spray.style.opacity = 0;
+            if(now < 0.3) sz.innerHTML = '<div class="grid" style="width:1px; height:100%; left:33.3%"></div><div class="grid" style="width:1px; height:100%; left:66.6%"></div><div class="grid" style="height:1px; width:100%; top:33.3%"></div><div class="grid" style="height:1px; width:100%; top:66.6%"></div>';
         }
     }, 100);
 
-    updateRunners();
+    syncUI();
 </script>
 </body>
 </html>
