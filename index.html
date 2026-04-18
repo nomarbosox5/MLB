@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cronin Baseball Pro</title>
     <style>
-        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #2d5a27; --dirt: #a67c52; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #1e3d1a; --dirt: #8b6e4b; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
@@ -13,57 +13,50 @@
 
         #header { height: 3vh; background: #111; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; letter-spacing: 2px; color: var(--gold); border-bottom: 1px solid #333; z-index: 10; }
         
-        /* BIGGER VIDEO */
-        #v-frame { width: 100%; height: 62vh; overflow: hidden; position: relative; background: #000; border-bottom: 2px solid #222; }
+        #v-frame { width: 100%; height: 62vh; overflow: hidden; position: relative; background: #000; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
         #deck { 
-            height: 35vh; display: grid; grid-template-columns: 1.1fr 0.9fr; 
-            background: var(--bg); padding: 10px; gap: 12px;
+            height: 35vh; display: grid; grid-template-columns: 1fr 1fr; 
+            background: var(--bg); padding: 8px; gap: 10px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .left-panel { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .left-panel { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+        .score-box { width: 100%; background: #111; padding: 6px; border-radius: 4px; display: flex; justify-content: space-around; font-size: 10px; font-weight: 900; border: 1px solid #333; }
         
-        /* EXPLICIT B S O LABELS */
-        .score-box { width: 100%; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 900; border-left: 3px solid var(--gold); box-sizing: border-box; }
-        .counter-group { display: flex; align-items: center; gap: 4px; }
-        .label { font-size: 10px; color: #777; margin-right: 2px; }
-
-        /* MOCK FIELD BROUGHT DOWN */
+        /* IMPROVED FIELD LOOK */
         #field-container { 
-            width: 100%; max-width: 170px; aspect-ratio: 1/1; 
-            background: #0a0a0a; border: 1.5px solid #333; border-radius: 12px; 
-            position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 100%; max-width: 160px; aspect-ratio: 1/1; 
+            background: #050505; border: 2px solid #222; border-radius: 10px; 
+            position: relative; overflow: hidden;
         }
         .field-svg { width: 100%; height: 100%; }
 
         .base-diamond { position: absolute; bottom: 12%; left: 50%; width: 40px; height: 40px; transform: translateX(-50%); pointer-events: none; z-index: 5; }
-        .base { position: absolute; width: 6px; height: 6px; background: #444; transform: rotate(45deg); border: 1px solid #555; }
-        #base-home { bottom: 0; left: 17px; width: 7px; height: 7px; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); transform: none; background: #aaa; }
-        #base-1 { bottom: 17px; right: 0; } #base-2 { top: 0; left: 17px; } #base-3 { bottom: 17px; left: 0; }
-        .runner { background: #fff !important; box-shadow: 0 0 10px #fff; }
+        .base { position: absolute; width: 5px; height: 5px; background: #555; transform: rotate(45deg); border: 1px solid #777; }
+        #base-home { bottom: 0; left: 17.5px; width: 6px; height: 6px; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); transform: none; background: #fff; }
+        #base-1 { bottom: 17.5px; right: 0; } #base-2 { top: 0; left: 17.5px; } #base-3 { bottom: 17.5px; left: 0; }
+        .runner { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); }
 
-        .right-panel { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: flex-start; padding-top: 5px; }
+        .right-panel { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: flex-start; }
         
-        /* LIFTED RESULTS */
-        #feedback-area { width: 100%; text-align: center; min-height: 50px; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid #222; margin-bottom: 5px;}
-        #res-main { color: var(--gold); font-size: 16px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        #res-sub { color: #888; font-size: 9px; font-weight: 700; margin-top: 2px; }
+        /* SMALLER, HIGHER RESULTS */
+        #feedback-area { width: 100%; text-align: center; height: 40px; display: flex; flex-direction: column; justify-content: center; }
+        #res-main { color: var(--gold); font-size: 13px; font-weight: 900; margin: 0; }
+        #res-sub { color: #888; font-size: 8px; font-weight: 700; margin: 0; }
 
-        /* STRIKE ZONE AWAY FROM EDGE */
+        /* BIGGER TAP BOX (STRIKE ZONE) */
         #strike-zone { 
-            width: 110px; height: 145px; border: 2px solid rgba(255,255,255,0.2); 
-            background: rgba(255,255,255,0.03); position: relative; touch-action: none; 
-            border-radius: 4px;
+            width: 130px; height: 160px; border: 2px solid rgba(255,255,255,0.15); 
+            background: rgba(255,255,255,0.02); position: relative; touch-action: none; 
+            border-radius: 6px; margin-top: 5px;
         }
         
-        .ball-asset { position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; border: 1px solid #999; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
-        .bat-asset { position: absolute; width: 22px; height: 22px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #3e2723; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #222; border: 1px solid #444; }
-        .b-on { background: var(--blue); box-shadow: 0 0 5px var(--blue); } 
-        .s-on { background: var(--gold); box-shadow: 0 0 5px var(--gold); } 
-        .o-on { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
+        .ball-asset { position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; border: 1px solid #999; }
+        .bat-asset { position: absolute; width: 18px; height: 18px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #3e2723; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #222; border: 1px solid #444; }
+        .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #e74c3c; }
     </style>
 </head>
 <body>
@@ -76,18 +69,19 @@
 <div id="deck">
     <div class="left-panel">
         <div class="score-box">
-            <div class="counter-group"><span class="label">B</span><div class="dots" id="b-dots"></div></div>
-            <div class="counter-group"><span class="label">S</span><div class="dots" id="s-dots"></div></div>
-            <div class="counter-group"><span class="label">O</span><div class="dots" id="o-dots"></div></div>
-            <div style="margin-left:5px; color:var(--gold)">R: <span id="r-val">0</span></div>
+            <div>B: <span id="b-dots" style="color:var(--blue)">0</span></div>
+            <div>S: <span id="s-dots" style="color:var(--gold)">0</span></div>
+            <div>O: <span id="o-dots" style="color:#e74c3c)">0</span></div>
+            <div>R: <span id="r-val">0</span></div>
         </div>
         <div id="field-container">
-            <svg class="field-svg" viewBox="0 0 100 100">
+            <svg class="field-svg" id="main-field" viewBox="0 0 100 100">
                 <path d="M50 95 L5 50 A 65 65 0 0 1 95 50 L50 95" fill="var(--grass)" />
-                <path d="M50 95 L28 73 L50 51 L72 73 Z" fill="var(--dirt)" />
-                <circle cx="50" cy="95" r="45" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.5" stroke-dasharray="2" />
-                <line x1="50" y1="95" x2="10" y2="55" stroke="#fff" stroke-width="0.5" opacity="0.5" />
-                <line x1="50" y1="95" x2="90" y2="55" stroke="#fff" stroke-width="0.5" opacity="0.5" />
+                <path d="M50 95 L22 67 L50 39 L78 67 Z" fill="var(--dirt)" />
+                <path d="M50 85 L35 70 L50 55 L65 70 Z" fill="var(--grass)" />
+                <circle cx="50" cy="67" r="3" fill="#6d553b" />
+                <line x1="50" y1="95" x2="10" y2="55" stroke="#fff" stroke-width="0.8" />
+                <line x1="50" y1="95" x2="90" y2="55" stroke="#fff" stroke-width="0.8" />
             </svg>
             <div class="base-diamond">
                 <div id="base-2" class="base"></div><div id="base-3" class="base"></div><div id="base-1" class="base"></div><div id="base-home" class="base"></div>
@@ -97,14 +91,14 @@
 
     <div class="right-panel">
         <div id="feedback-area">
-            <div id="res-main">READY</div>
-            <div id="res-sub">WAITING FOR PITCH</div>
+            <p id="res-main">READY</p>
+            <p id="res-sub">WAITING FOR PITCH</p>
         </div>
         <div id="strike-zone">
-            <div style="position:absolute; width:100%; height:1px; top:33%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; width:100%; height:1px; top:66%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; height:100%; width:1px; left:33%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; height:100%; width:1px; left:66%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
         </div>
     </div>
 </div>
@@ -112,7 +106,7 @@
 <script>
     const v = document.getElementById('v');
     const sz = document.getElementById('strike-zone');
-    const field = document.querySelector('.field-svg');
+    const field = document.getElementById('main-field');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75, strike: true }, { t: 6.40, x: -0.40, y: 1.00, strike: false },
@@ -126,11 +120,10 @@
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
         const now = v.currentTime;
-        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.8);
+        // Wider window (0.9s) to ensure the tap is caught
+        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.9);
         
-        // Clearing logic check: ensure we don't double process
         if(g.processed || pIdx === -1) return; 
-        
         g.processed = true; 
         g.lastIdx = pIdx;
 
@@ -149,16 +142,16 @@
         const ball = document.createElement('div'); ball.className='ball-asset';
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
-        if(dist < 52) {
+        if(dist < 55) {
             const yOffset = ty - py; 
             const xOffset = tx - px;
-            let launchAngle = (yOffset / 22) * 42; 
-            let hitAngle = (xOffset * 1.8) + (tDiff * 160); 
-            let exitVel = 108 - (dist * 1.5) - (Math.abs(tDiff) * 320);
-            let distance = (exitVel * 4.1) * (Math.cos(launchAngle * Math.PI / 180));
+            let launchAngle = (yOffset / 20) * 40; 
+            let hitAngle = (xOffset * 1.6) + (tDiff * 140); 
+            let exitVel = 105 - (dist * 1.2) - (Math.abs(tDiff) * 280);
+            let distance = (exitVel * 4.2) * (Math.cos(launchAngle * Math.PI / 180));
 
-            if (launchAngle < -6) { distance = Math.min(distance, 88); } 
-            if (launchAngle > 38) { distance = Math.min(distance, 240); } 
+            if (launchAngle < -5) distance = Math.min(distance, 95); 
+            if (launchAngle > 35) distance = Math.min(distance, 250); 
             
             handleHit(distance, hitAngle, launchAngle, exitVel);
         } else { addStrike("WHIFF"); }
@@ -168,13 +161,13 @@
     function handleHit(ft, angle, la, ev) {
         let res = "OUT"; let move = 0;
         let absAngle = Math.abs(angle);
-        if(absAngle > 52) { addStrike("FOUL BALL"); return; }
+        if(absAngle > 54) { addStrike("FOUL"); return; }
 
-        if (ft < 100) { res = la < 0 ? "GROUND OUT" : "POP OUT"; }
-        else if (ft < 210) { res = "SINGLE"; move = 1; }
-        else if (ft < 310) { res = "DOUBLE"; move = 2; }
+        if (ft < 105) { res = la < 0 ? "GROUND OUT" : "POP OUT"; }
+        else if (ft < 220) { res = "SINGLE"; move = 1; }
+        else if (ft < 320) { res = "DOUBLE"; move = 2; }
         else {
-            let fence = (absAngle > 35) ? 330 : 398;
+            let fence = (absAngle > 35) ? 335 : 395;
             if (ft >= fence) { res = "HOME RUN"; move = 4; }
             else { res = "TRIPLE"; move = 3; }
         }
@@ -183,9 +176,9 @@
         
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
-        line.setAttribute("x2", 50 + (angle * 0.7)); line.setAttribute("y2", 95 - (Math.min(ft, 420)/4.6));
-        line.setAttribute("stroke", move > 0 ? "var(--orange)" : "#555");
-        line.setAttribute("stroke-width", "2.5"); line.setAttribute("class", "hit-l");
+        line.setAttribute("x2", 50 + (angle * 0.75)); line.setAttribute("y2", 95 - (Math.min(ft, 420)/4.4));
+        line.setAttribute("stroke", move > 0 ? "var(--gold)" : "#666");
+        line.setAttribute("stroke-width", "2"); line.setAttribute("class", "hit-l");
         field.appendChild(line);
 
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
@@ -228,11 +221,9 @@
 
     function updateUI() {
         document.getElementById('r-val').innerText = g.r;
-        const render = (id, cur, max, cls) => {
-            let h = ''; for(let i=0; i<max; i++) h += `<div class="dot ${i<cur?cls:''}"></div>`;
-            document.getElementById(id).innerHTML = h;
-        };
-        render('b-dots', g.b, 3, 'b-on'); render('s-dots', g.s, 2, 's-on'); render('o-dots', g.o, 2, 'o-on');
+        document.getElementById('b-dots').innerText = g.b;
+        document.getElementById('s-dots').innerText = g.s;
+        document.getElementById('o-dots').innerText = g.o;
         document.getElementById('base-1').className = `base ${g.bases[0]?'runner':''}`;
         document.getElementById('base-2').className = `base ${g.bases[1]?'runner':''}`;
         document.getElementById('base-3').className = `base ${g.bases[2]?'runner':''}`;
@@ -241,22 +232,27 @@
     setInterval(() => {
         const now = v.currentTime;
         
-        // AUTO-PITCH LOGIC
-        const autoIdx = pitches.findIndex(p => now > p.t + 0.65 && g.lastIdx < pitches.indexOf(p));
+        // Ensure automatic pitch calls for skipped pitches
+        const autoIdx = pitches.findIndex(p => now > p.t + 0.7 && g.lastIdx < pitches.indexOf(p));
         if(autoIdx !== -1) {
             g.lastIdx = autoIdx; g.processed = true;
             if(pitches[autoIdx].strike) { addStrike("TAKEN"); } else { addBall("OUTSIDE"); }
             updateUI();
         }
 
-        // RESET LOGIC: Wipes everything at the start of the video loop (0.0 to 0.2 seconds)
-        if (now < 0.2) {
-            if (g.processed || g.lastIdx !== -1) {
+        // RESET: Only happens once at the very start of the loop
+        if (now < 0.25) {
+            if (g.lastIdx !== -1) {
                 g.processed = false; g.lastIdx = -1;
                 document.querySelectorAll('.hit-l').forEach(l => l.remove());
                 sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
                 showMsg("READY", "WAITING FOR PITCH"); 
                 updateUI();
+            }
+        } else {
+            // Re-enable processing if we move past a pitch window
+            if(g.processed && !pitches.some(p => Math.abs(now - p.t) < 0.9)) {
+                g.processed = false;
             }
         }
     }, 50);
