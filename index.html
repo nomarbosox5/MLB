@@ -3,94 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Pro Baseball</title>
+    <title>Cronin Baseball Classic Pro</title>
     <style>
-        :root { --gold: #f1c40f; --blue: #3498db; --grass: #1b3318; --board: #0a0a0a; }
+        :root { --gold: #f1c40f; --blue: #3498db; --grass: #1b3318; --board: #111; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
 
-        #header { height: 2.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #333; letter-spacing: 1px; }
-        
-        #v-frame { width: 100%; height: 58vh; overflow: hidden; position: relative; }
+        #header { height: 2.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #444; letter-spacing: 1px; }
+        #v-frame { width: 100%; height: 58.5vh; overflow: hidden; position: relative; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
-        /* MLB STYLE SCORE STRIP */
-        #scoreboard-strip {
-            height: 6vh; background: var(--board); border-top: 1px solid #222; border-bottom: 1px solid #222;
-            display: flex; align-items: center; justify-content: space-around; padding: 0 15px;
+        #deck { 
+            height: 39vh; display: grid; grid-template-columns: 1fr 1fr; 
+            background: #050505; padding: 10px; gap: 10px;
         }
-        .stat-unit { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
-        .stat-label { font-size: 7px; color: #666; font-weight: 900; margin-bottom: -2px; }
-        .stat-val { font-size: 18px; font-weight: 900; }
+
+        .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+
+        .card-strip {
+            width: 100%; background: var(--board); border: 1px solid #333; border-radius: 4px;
+            padding: 5px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .stats-row { display: flex; justify-content: space-around; font-size: 12px; font-weight: 900; }
+        .diamond-row { display: flex; justify-content: center; align-items: center; gap: 15px; border-top: 1px solid #222; padding-top: 4px; }
         
-        #mini-diamond { width: 28px; height: 28px; position: relative; transform: rotate(45deg); margin-top: 2px; }
-        .m-base { position: absolute; width: 6px; height: 6px; border: 1px solid #333; background: #111; }
+        #mini-diamond { width: 24px; height: 24px; position: relative; transform: rotate(45deg); }
+        .m-base { position: absolute; width: 5px; height: 5px; border: 1px solid #444; background: #222; }
         #mb-1 { top: 0; right: 0; } #mb-2 { top: 0; left: 0; } #mb-3 { bottom: 0; left: 0; }
         .m-on { background: var(--gold); border-color: #fff; box-shadow: 0 0 8px var(--gold); }
 
-        #result-strip { height: 3.5vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; }
+        #res-main { color: var(--gold); font-size: 11px; font-weight: 900; }
 
-        #deck { 
-            height: 30vh; display: grid; grid-template-columns: 1.3fr 0.7fr; 
-            background: var(--grass); position: relative;
+        #field-container { 
+            width: 100%; flex-grow: 1; background: var(--grass); border-radius: 4px; 
+            position: relative; overflow: hidden; margin-top: 5px; border: 1px solid #222;
         }
-
-        /* SIMPLE SPRAY FIELD */
-        #field-chart { width: 100%; height: 100%; position: relative; overflow: hidden; }
-        .hit-path { position: absolute; background: linear-gradient(to top, rgba(255,255,255,0.4), transparent); width: 1.5px; transform-origin: bottom center; }
-        .hit-marker { 
-            position: absolute; width: 22px; height: 22px; background: #000; 
-            border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; font-size: 8px; font-weight: 900; color: #fff; transform: translate(-50%, -50%);
+        /* Foul Lines */
+        .f-line { position: absolute; bottom: 0; width: 1.5px; height: 150%; background: rgba(255,255,255,0.2); transform-origin: bottom; left: 50%; }
+        
+        /* Hit Visuals */
+        .hit-dot {
+            position: absolute; width: 18px; height: 18px; background: #000;
+            border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 7px; font-weight: 900; transform: translate(-50%, -50%);
             z-index: 10;
+        }
+        .hit-path-line {
+            position: absolute; background: rgba(255,255,255,0.4); width: 1.5px;
+            transform-origin: bottom center; bottom: 0; left: 50%; z-index: 5;
         }
 
         #strike-zone { 
-            width: 125px; height: 165px; border: 1.5px solid rgba(255,255,255,0.2); 
-            background: rgba(0,0,0,0.3); position: relative; touch-action: none; 
-            border-radius: 4px; align-self: center; justify-self: center; margin-right: 10px;
+            width: 120px; height: 155px; border: 1.5px solid rgba(255,255,255,0.2); 
+            background: rgba(255,255,255,0.03); position: relative; touch-action: none; 
+            border-radius: 4px; margin-top: -15px;
         }
         
-        .ball-asset { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 10px #fff; }
+        .ball-asset { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 8px #fff; }
         .bat-asset { position: absolute; width: 16px; height: 16px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #000; }
     </style>
 </head>
 <body>
 
-<div id="header">CRONIN PRO BROADCAST</div>
+<div id="header">CRONIN BROADCAST CLASSIC</div>
 <div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
-<div id="scoreboard-strip">
-    <div class="stat-unit"><span class="stat-label">B</span><span class="stat-val" id="b-val" style="color:var(--blue)">0</span></div>
-    <div class="stat-unit"><span class="stat-label">S</span><span class="stat-val" id="s-val" style="color:var(--gold)">0</span></div>
-    <div class="stat-unit"><span class="stat-label">O</span><span class="stat-val" id="o-val" style="color:#e74c3c">0</span></div>
-    <div id="mini-diamond">
-        <div id="mb-2" class="m-base"></div><div id="mb-1" class="m-base"></div><div id="mb-3" class="m-base"></div>
-    </div>
-    <div class="stat-unit"><span class="stat-label">R</span><span class="stat-val" id="r-val">0</span></div>
-</div>
-
-<div id="result-strip">READY</div>
-
 <div id="deck">
-    <div id="field-chart"></div>
-    <div id="strike-zone">
-        <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
-        <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
-        <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
-        <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
+    <div class="panel">
+        <div class="card-strip">
+            <div class="stats-row">
+                <div style="color:var(--blue)">B <span id="b-val">0</span></div>
+                <div style="color:var(--gold)">S <span id="s-val">0</span></div>
+                <div style="color:#e74c3c">O <span id="o-val">0</span></div>
+                <div>R <span id="r-val">0</span></div>
+            </div>
+            <div class="diamond-row">
+                <div id="mini-diamond">
+                    <div id="mb-2" class="m-base"></div><div id="mb-1" class="m-base"></div><div id="mb-3" class="m-base"></div>
+                </div>
+                <div id="res-main">READY</div>
+            </div>
+        </div>
+        <div id="field-container">
+            <div class="f-line" style="transform: rotate(-45deg);"></div>
+            <div class="f-line" style="transform: rotate(45deg);"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div id="strike-zone">
+            <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
+            <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
+        </div>
+        <div style="font-size: 8px; color: #444; font-weight: 900; margin-bottom: 5px;">STRIKE ZONE</div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
     const sz = document.getElementById('strike-zone');
-    const chart = document.getElementById('field-chart');
-    const resStrip = document.getElementById('result-strip');
+    const field = document.getElementById('field-container');
+    const resMain = document.getElementById('res-main');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75, strike: true }, { t: 6.40, x: -0.40, y: 1.00, strike: false },
@@ -123,21 +142,21 @@
         const ball = document.createElement('div'); ball.className='ball-asset';
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
-        if(dist < 58) {
+        if(dist < 56) {
             const la = ((ty - py) / 20) * 45; 
             const ang = ((tx - px) * 1.6) + (tDiff * 140); 
             const ev = 110 - (dist * 1.1) - (Math.abs(tDiff) * 300);
             let ft = (ev * 4.4) * (Math.cos(la * Math.PI / 180));
             if (la < -5) ft = Math.min(ft, 105); 
             if (la > 40) ft = Math.min(ft, 255); 
-            handleHit(ft, ang, la, ev);
+            handleHit(ft, ang, la);
         } else { addStrike("WHIFF"); }
         updateUI();
     });
 
-    function handleHit(ft, angle, la, ev) {
+    function handleHit(ft, angle, la) {
         let res = "OUT"; let move = 0; let tag = "OUT";
-        if(Math.abs(angle) > 55) { addStrike("FOUL"); return; }
+        if(Math.abs(angle) > 50) { addStrike("FOUL"); return; } 
 
         if (ft < 112) { res = la < 0 ? "GROUND OUT" : "POP OUT"; tag = "OUT"; }
         else if (ft < 228) { res = "SINGLE"; move = 1; tag = "1B"; }
@@ -148,24 +167,23 @@
             else { res = "TRIPLE"; move = 3; tag = "3B"; }
         }
         
-        resStrip.innerText = `${res} | ${Math.floor(ev)} MPH | ${Math.floor(ft)} FT`;
+        resMain.innerText = res;
         
-        // Draw Path
-        const path = document.createElement('div');
-        path.className = 'hit-path';
-        const h = Math.min(ft, 420) / 4.5;
-        path.style.height = h + "px";
-        path.style.left = "50%";
-        path.style.bottom = "5%";
-        path.style.transform = `rotate(${angle * 0.7}deg)`;
-        chart.appendChild(path);
+        // Path Line
+        const pathLine = document.createElement('div');
+        pathLine.className = 'hit-path-line';
+        const h = Math.min(ft, 420) / 4.6;
+        pathLine.style.height = h + "px";
+        pathLine.style.transform = `rotate(${angle * 0.75}deg)`;
+        field.appendChild(pathLine);
 
+        // Result Dot
         const dot = document.createElement('div');
-        dot.className = 'hit-marker';
+        dot.className = 'hit-dot';
         dot.innerText = tag;
         dot.style.left = (50 + (angle * 0.85)) + "%";
         dot.style.top = (95 - (Math.min(ft, 420)/4.6)) + "%";
-        chart.appendChild(dot);
+        field.appendChild(dot);
 
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
         else { g.o++; g.b = 0; g.s = 0; checkState(); }
@@ -183,18 +201,18 @@
     function addStrike(reason) {
         if (reason === "FOUL") {
             if (g.s < 2) g.s++;
-            resStrip.innerText = "FOUL";
+            resMain.innerText = "FOUL";
         } else {
             g.s++;
-            resStrip.innerText = reason === "WHIFF" ? "STRIKE (W)" : "STRIKE";
-            if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; resStrip.innerText = "OUT (K)"; checkState(); }
+            resMain.innerText = reason === "WHIFF" ? "STRIKE (K)" : "STRIKE";
+            if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; resMain.innerText = "STRIKEOUT"; checkState(); }
         }
     }
 
-    function addBall(reason) {
-        g.b++; resStrip.innerText = "BALL";
+    function addBall() {
+        g.b++; resMain.innerText = "BALL";
         if(g.b >= 4) {
-            g.b = 0; g.s = 0; resStrip.innerText = "WALK";
+            g.b = 0; g.s = 0; resMain.innerText = "WALK";
             if (g.bases[0] && g.bases[1] && g.bases[2]) g.r++;
             else if (g.bases[0] && g.bases[1]) g.bases[2] = true;
             else if (g.bases[0]) g.bases[1] = true;
@@ -203,7 +221,7 @@
     }
 
     function checkState() {
-        if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resStrip.innerText = "SIDE RETIRED"; }
+        if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resMain.innerText = "3 OUTS"; }
     }
 
     function updateUI() {
@@ -221,22 +239,22 @@
         const autoIdx = pitches.findIndex(p => now > p.t + 0.85 && g.lastIdx < pitches.indexOf(p));
         if(autoIdx !== -1) {
             g.lastIdx = autoIdx; g.processed = true;
-            if(pitches[autoIdx].strike) addStrike("TAKEN"); else addBall("OUTSIDE");
+            if(pitches[autoIdx].strike) addStrike("TAKEN"); else addBall();
             updateUI();
         }
 
         const nextP = pitches.find(p => p.t > now);
         if(nextP && (nextP.t - now < 3.0)) {
             sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
-            if(resStrip.innerText !== "READY") resStrip.innerText = "";
+            if(resMain.innerText !== "READY") resMain.innerText = "";
         }
 
         if (now < 0.2) {
             if (g.lastIdx !== -1) {
                 g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
-                chart.innerHTML = '';
+                field.querySelectorAll('.hit-dot, .hit-path-line').forEach(el => el.remove());
                 sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
-                resStrip.innerText = "READY"; 
+                resMain.innerText = "READY"; 
                 updateUI();
             }
         } else {
