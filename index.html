@@ -1,113 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLB Live Play-Along</title>
     <style>
-        :root { --neon-cyan: #00ffcc; --bg-black: #050505; }
-        body { background: var(--bg-black); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; overflow-x: hidden; }
+        :root { --neon: #00ffcc; --bg: #050505; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; }
         
-        /* Video Simulation Area */
-        .video-placeholder { width: 100%; max-width: 400px; aspect-ratio: 16/9; background: #1a1a1a; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #333; margin-bottom: 20px; color: #444; font-weight: bold; }
+        .ui-layer { width: 360px; margin-top: 40px; display: flex; justify-content: space-between; }
+        .result-text { font-size: 44px; font-weight: 900; color: var(--neon); text-transform: uppercase; margin: 0; }
+        
+        .nestico-grid { 
+            width: 160px; height: 200px; border: 2px solid white; position: relative; 
+            background: rgba(255,255,255,0.03); 
+        }
+        /* Strike Zone boundary based on the 4 corners provided */
+        .zone-line { 
+            position: absolute; left: 24px; top: 33px; width: 112px; height: 134px; 
+            border: 1px solid rgba(255,255,255,0.3); 
+        }
 
-        /* Results Panel (from your screenshot) */
-        .outcome-container { width: 100%; max-width: 360px; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; min-height: 120px; }
-        .text-group { flex: 1; }
-        .main-result { font-size: 52px; font-weight: 900; line-height: 0.9; text-transform: uppercase; color: var(--neon-cyan); margin: 0; transition: 0.3s opacity; }
-        .sub-result { font-size: 14px; letter-spacing: 2px; color: #888; margin-top: 8px; text-transform: uppercase; }
-
-        /* The Grid Box (from your screenshot) */
-        .grid-box { width: 160px; height: 200px; border: 2px solid white; position: relative; background: rgba(255,255,255,0.05); }
-        .inner-strike-zone { position: absolute; left: 25px; top: 35px; width: 110px; height: 130px; border: 1px solid rgba(255,255,255,0.3); }
-        .pitch-dot { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px var(--neon-cyan); display: none; }
-
-        /* Game Stats */
-        .game-bar { width: 100%; max-width: 360px; display: flex; justify-content: space-around; border-top: 1px solid #222; padding-top: 15px; font-size: 12px; color: #666; }
-        .active-btn { background: var(--neon-cyan); color: black; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .ball-dart { 
+            position: absolute; width: 12px; height: 12px; background: white; 
+            border-radius: 50%; transform: translate(-50%, -50%); 
+            box-shadow: 0 0 10px var(--neon); display: none; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div class="video-placeholder">
-        [ PITCH VIDEO FEED ]
-    </div>
-
-    <div class="outcome-container">
-        <div class="text-group">
-            <h1 class="main-result" id="resTitle">---</h1>
-            <div class="sub-result" id="resSub">WATCHING...</div>
+    <div class="ui-layer">
+        <div>
+            <h1 id="mainRes" class="result-text">READY</h1>
+            <div id="subRes" style="color:#666; letter-spacing:2px; font-size:12px;">WAITING FOR START</div>
         </div>
-        
-        <div class="grid-box">
-            <div class="inner-strike-zone"></div>
-            <div id="dot" class="pitch-dot"></div>
+        <div class="nestico-grid" id="grid">
+            <div class="zone-line"></div>
+            <div id="ball" class="ball-dart" onclick="registerHit()"></div>
         </div>
     </div>
 
-    <div class="game-bar">
-        <span>BALLS: <b id="b">0</b></span>
-        <span>STRIKES: <b id="s">0</b></span>
-        <span>OUTS: <b id="o">0</b></span>
-    </div>
-
-    <button class="active-btn" id="startBtn" onclick="startGame()">START VIDEO SYNC</button>
+    <button id="start" onclick="startSync()" style="margin-top:50px; padding:15px 30px; border-radius:30px; border:none; background:var(--neon); font-weight:bold; cursor:pointer;">START VIDEO SYNC</button>
 
     <script>
-        // Timing-based Pitch Data (Seconds into the video)
         const sequence = [
-            { time: 2,  x: -0.75, y: 3.25, res: "HOME RUN", sub: "PERFECT TIMING", color: "#00ffcc" },
-            { time: 8,  x: -0.4,  y: 3.5,  res: "FLY OUT",  sub: "DEEP CENTER", color: "#ffffff" },
-            { time: 14, x: -0.25, y: 2.75, res: "STRIKE",   sub: "LOOKING", color: "#ff4444" },
-            { time: 20, x: -0.9,  y: 1.75, res: "BALL",     sub: "LOW AND AWAY", color: "#3399ff" },
-            { time: 26, x: -0.75, y: 3.0,  res: "DOUBLE",   sub: "POWER GAPPER", color: "#00ffcc" }
+            { t: 0.92,  x: -0.75, y: 3.25, type: "STRIKE", res: "HOME RUN" },
+            { t: 6.40,  x: -0.4,  y: 3.5,  type: "STRIKE", res: "FLY OUT" },
+            { t: 10.86, x: -0.25, y: 2.75, type: "STRIKE", res: "SINGLE" },
+            { t: 16.08, x: 0.15,  y: 2.6,  type: "STRIKE", res: "POP UP" },
+            { t: 21.50, x: 0.2,   y: 2.75, type: "STRIKE", res: "GROUNDER" },
+            { t: 28.03, x: -0.9,  y: 1.75, type: "BALL",   res: "TAKE" },
+            { t: 33.00, x: -0.75, y: 3.0,  type: "STRIKE", res: "DOUBLE" },
+            { t: 36.17, x: -0.9,  y: 2.25, type: "BALL",   res: "TAKE" }
         ];
 
-        let balls = 0, strikes = 0, outs = 0;
+        let canHit = false;
+        let activePitch = null;
 
-        function startGame() {
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('resSub').innerText = "LIVE TRACKING";
-            
-            sequence.forEach((pitch) => {
-                setTimeout(() => {
-                    triggerPitch(pitch);
-                }, pitch.time * 1000);
+        function startSync() {
+            document.getElementById('start').style.display = 'none';
+            sequence.forEach(p => {
+                setTimeout(() => showBall(p), p.t * 1000);
             });
         }
 
-        function triggerPitch(p) {
-            const dot = document.getElementById('dot');
-            const title = document.getElementById('resTitle');
-            const sub = document.getElementById('resSub');
-
-            // Map Thomas Nestico coords to the 160x200 grid
-            // X: -1 to 1 maps to 0 to 160 | Y: 1 to 4 maps to 200 to 0
-            const visualX = ((p.x + 1) / 2) * 160;
-            const visualY = 200 - ((p.y - 1) / 3) * 200;
-
-            dot.style.left = visualX + "px";
-            dot.style.top = visualY + "px";
-            dot.style.display = "block";
-
-            title.innerText = p.res;
-            title.style.color = p.color;
-            sub.innerText = p.sub;
-
-            // Simple Stat Tracking
-            if (p.res === "STRIKE") { strikes++; if(strikes >= 3) { outs++; strikes = 0; balls = 0; }}
-            if (p.res === "BALL") { balls++; if(balls >= 4) { strikes = 0; balls = 0; }}
+        function showBall(p) {
+            activePitch = p;
+            canHit = true;
+            const ball = document.getElementById('ball');
             
-            document.getElementById('b').innerText = balls;
-            document.getElementById('s').innerText = strikes;
-            document.getElementById('o').innerText = outs;
+            // Map MLB coords to pixels
+            const vX = ((p.x + 1) / 2) * 160;
+            const vY = 200 - ((p.y - 1) / 3) * 200;
 
-            // Fade the result slightly after 3 seconds to prepare for next pitch
+            ball.style.left = vX + "px";
+            ball.style.top = vY + "px";
+            ball.style.display = "block";
+
+            // Ball stays visible for 800ms "swing window"
             setTimeout(() => {
-                title.style.opacity = "0.3";
-                dot.style.display = "none";
-            }, 3500);
-            setTimeout(() => { title.style.opacity = "1"; }, 3900);
+                ball.style.display = "none";
+                canHit = false;
+            }, 800);
+        }
+
+        function registerHit() {
+            if (!canHit) return;
+            const title = document.getElementById('mainRes');
+            const sub = document.getElementById('subRes');
+            
+            title.innerText = activePitch.res;
+            sub.innerText = "TIMING: PERFECT";
+            canHit = false; // Prevent double clicking
         }
     </script>
 </body>
