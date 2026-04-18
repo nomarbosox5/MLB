@@ -3,35 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast v7 - Hit Types</title>
+    <title>Statcast Every Hit v9</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Roboto Condensed', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Helvetica Neue', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
+        /* VIDEO LAYER */
         #v-layer { width: 100%; height: 42vh; background: #000; position: relative; overflow: hidden; }
-        video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); pointer-events: none; }
 
-        /* SCORE BUG */
-        #score-bug { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.85); display: flex; align-items: center; padding: 8px 15px; border-radius: 4px; border-left: 5px solid #BD3039; z-index: 50; }
-        .team { font-size: 1.6rem; font-weight: 900; margin-right: 12px; }
-        
-        /* RESULT POPUP */
-        #result-banner { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 3rem; font-weight: 900; font-style: italic; text-transform: uppercase;
-            text-shadow: 0 0 20px #000; pointer-events: none; opacity: 0; z-index: 100;
+        /* BROADCAST OVERLAYS */
+        #score-bug { position: absolute; top: 20px; left: 20px; background: rgba(10,10,10,0.95); display: flex; align-items: center; padding: 8px 16px; border-left: 5px solid #BD3039; z-index: 100; }
+        .team { font-weight: 900; font-size: 1.5rem; letter-spacing: 1px; }
+
+        /* FEEDBACK BOX (BOTTOM RIGHT) */
+        #data-box { 
+            position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.92); 
+            border: 1px solid #444; padding: 10px; width: 160px; display: none; flex-direction: column; z-index: 100;
         }
+        .row { border-bottom: 1px solid #222; padding: 5px 0; }
+        .label { font-size: 0.65rem; color: #aaa; text-transform: uppercase; }
+        .val { font-size: 1rem; font-weight: bold; }
+        .speed-line { color: #efb21e; font-size: 0.85rem; padding-top: 6px; font-weight: 900; }
 
-        /* STATCAST BOXES */
-        #statcast-overlay { position: absolute; inset: 0; background: rgba(0, 30, 70, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 110; }
-        .stat-bubble { background: #efb21e; color: #000; padding: 10px 25px; border-radius: 40px; font-weight: 900; margin: 8px; font-size: 1.4rem; }
-        .stat-bubble span { display: block; font-size: 0.7rem; text-transform: uppercase; color: #222; }
+        /* STATCAST FULL OVERLAY (TRIGGERS ON ANY CONTACT) */
+        #sc-overlay { 
+            position: absolute; inset: 0; background: rgba(0,20,45,0.96); 
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200;
+        }
+        .sc-title { color: #efb21e; font-style: italic; font-weight: 900; font-size: 1.8rem; margin-bottom: 15px; }
+        .stat-card { background: #efb21e; color: #000; padding: 12px 20px; border-radius: 4px; margin: 6px; width: 220px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .stat-card span { display: block; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
+        .stat-card b { font-size: 1.8rem; line-height: 1; }
+        #close-btn { margin-top: 25px; padding: 12px 40px; border: 2px solid #fff; background: none; color: #fff; font-weight: 900; cursor: pointer; }
 
-        /* BOX AREA */
-        #interaction { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #080808; }
-        #nestico-box { position: relative; width: 180px; height: 230px; border: 1px solid #333; background: rgba(255,255,255,0.02); }
+        /* HIT ZONE */
+        #game { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #050505; }
+        #nestico-box { position: relative; width: 180px; height: 230px; border: 1px solid #333; background: rgba(255,255,255,0.01); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #target { width: 14px; height: 14px; background: #fff; opacity: 0; box-shadow: 0 0 12px #fff; }
-        #swing { width: 28px; height: 28px; border: 2px solid #fff; display: none; background: rgba(255, 59, 48, 0.7); }
+        #target { width: 14px; height: 14px; background: #fff; opacity: 0; box-shadow: 0 0 10px #fff; }
+        #swing { width: 26px; height: 26px; border: 2px solid #fff; display: none; background: rgba(255,0,0,0.4); }
     </style>
 </head>
 <body>
@@ -40,19 +50,25 @@
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
-    <div id="score-bug"><div class="team">BOS <span id="r-val">0</span></div></div>
-    <div id="result-banner">HOME RUN</div>
 
-    <div id="statcast-overlay">
-        <h1 style="color:#efb21e; font-style: italic;">STATCAST™</h1>
-        <div class="stat-bubble"><span>Exit Velocity</span><b id="sc-ev">0</b> MPH</div>
-        <div class="stat-bubble"><span>Launch Angle</span><b id="sc-la">0</b>°</div>
-        <div class="stat-bubble"><span>Distance</span><b id="sc-dist">0</b> FT</div>
-        <button onclick="document.getElementById('statcast-overlay').style.display='none'" style="margin-top:20px; padding:10px 30px; font-weight:900;">RESUME</button>
+    <div id="score-bug"><div class="team">BOS <span id="r-val">0</span></div></div>
+
+    <div id="data-box">
+        <div class="row"><div class="label">Timing</div><div class="val" id="d-time">--</div></div>
+        <div class="row"><div class="label">Result</div><div class="val" id="d-contact">--</div></div>
+        <div class="speed-line">EXIT VELO: <span id="d-ev">0</span> MPH</div>
+    </div>
+
+    <div id="sc-overlay">
+        <div class="sc-title">STATCAST™ TRACKING</div>
+        <div class="stat-card"><span>Exit Velocity</span><b id="sc-ev">0</b></div>
+        <div class="stat-card"><span>Launch Angle</span><b id="sc-la">0</b>°</div>
+        <div class="stat-card"><span>Distance</span><b id="sc-dist">0</b></div>
+        <button id="close-btn" onclick="document.getElementById('sc-overlay').style.display='none'">RESUME</button>
     </div>
 </div>
 
-<div id="interaction">
+<div id="game">
     <div id="nestico-box">
         <div id="tap-surface" style="position:absolute; inset:0; z-index:10; touch-action:none;"></div>
         <div id="target" class="dot"></div>
@@ -73,7 +89,10 @@
 
     v.addEventListener('timeupdate', () => {
         const now = v.currentTime;
-        if (now < g.lastT) { g.activeIdx = -1; g.swung = false; document.getElementById('result-banner').style.opacity = '0'; }
+        if (now < g.lastT) { 
+            g.activeIdx = -1; g.swung = false; 
+            document.getElementById('data-box').style.display='none'; 
+        }
         g.lastT = now;
 
         let idx = -1;
@@ -108,41 +127,49 @@
         const px = ((p.x + 1.5) / 3.0) * 180;
         const py = 230 - (((p.y - 1.0) / 3.0) * 230);
         
-        const dX = ux - px;
-        const dY = py - uy; // Under ball = positive LA
-        const distErr = Math.sqrt(dX*dX + dY*dY);
+        const dX = ux - px; const dY = py - uy;
+        const err = Math.sqrt(dX*dX + dY*dY);
         const tDiff = Math.abs(v.currentTime - p.t);
 
-        const banner = document.getElementById('result-banner');
-        banner.style.opacity = '1';
+        // UI Elements
+        const dataBox = document.getElementById('data-box');
+        const overlay = document.getElementById('sc-overlay');
+        dataBox.style.display = 'flex';
 
-        // THE PHYSICS ENGINE
-        if (distErr > 45 || tDiff > 0.35) {
-            banner.innerText = "WHIFF"; banner.style.color = "#ff4d4d";
-        } else if (Math.abs(dX) > 25) {
-            banner.innerText = "FOUL BALL"; banner.style.color = "#aaa";
-        } else {
-            const ev = Math.round(112 - (distErr * 0.7));
+        if (err < 42 && tDiff < 0.32) {
+            // Stats Calculation
+            const ev = Math.round(114 - (err * 0.75));
             const la = Math.round(dY * 1.6);
-            const dist = Math.round((ev * ev / 29) * (1 + la/90));
+            const dist = Math.round((ev * ev / 28) * (1 + la/90));
 
-            if (la < 5) { banner.innerText = "GROUND BALL"; banner.style.color = "#fff"; }
-            else if (la >= 5 && la < 25) { banner.innerText = "LINE DRIVE"; banner.style.color = "#00ffcc"; }
-            else if (la >= 25 && la < 45 && ev > 100) { 
-                banner.innerText = "HOME RUN"; banner.style.color = "#efb21e";
+            // Update Feedbacks
+            document.getElementById('d-ev').innerText = ev;
+            document.getElementById('d-time').innerText = tDiff < 0.1 ? "PERFECT" : (v.currentTime < p.t ? "EARLY" : "LATE");
+            
+            if (err < 16) { 
+                document.getElementById('d-contact').innerText = "SQUARED UP"; 
+                document.getElementById('d-contact').style.color = "#efb21e";
+            } else {
+                document.getElementById('d-contact').innerText = la < 8 ? "GROUND BALL" : "FLY BALL";
+                document.getElementById('d-contact').style.color = "#fff";
+            }
+
+            // Statcast Update (SHOWS ON EVERY HIT)
+            document.getElementById('sc-ev').innerText = ev;
+            document.getElementById('sc-la').innerText = la;
+            document.getElementById('sc-dist').innerText = dist + " FT";
+            overlay.style.display = 'flex';
+
+            // Incremenet runs only if it was actually a Home Run
+            if (la > 24 && la < 36 && ev > 103) {
                 g.r++; document.getElementById('r-val').innerText = g.r;
-                showStats(ev, la, dist);
-            } else { banner.innerText = "FLY OUT"; banner.style.color = "#ff4d4d"; }
+            }
+        } else {
+            document.getElementById('d-time').innerText = "TOO LATE";
+            document.getElementById('d-contact').innerText = "WHIFF";
+            document.getElementById('d-ev').innerText = "0";
         }
-        setTimeout(() => { banner.style.opacity = '0'; }, 1500);
     });
-
-    function showStats(ev, la, dist) {
-        document.getElementById('sc-ev').innerText = ev;
-        document.getElementById('sc-la').innerText = la;
-        document.getElementById('sc-dist').innerText = dist;
-        document.getElementById('statcast-overlay').style.display = 'flex';
-    }
 </script>
 </body>
 </html>
