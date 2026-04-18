@@ -3,277 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Baseball: Thumb Pro</title>
+    <title>Cronin Baseball: Cartoon Pro</title>
     <style>
-        :root { --gold: #f1c40f; --blue: #3498db; --grass: #1b3318; --board: #111; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #3a6d32; --dirt: #a67c52; --fence: #999; --board: #111; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
 
-        #header { height: 2vh; background: #000; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: #333; }
-        #v-frame { width: 100%; height: 58vh; overflow: hidden; position: relative; }
+        /* BIGGER BANNER */
+        #banner { 
+            height: 4vh; background: linear-gradient(to bottom, #222, #000); display: flex; align-items: center; justify-content: center; 
+            font-size: 11px; font-weight: 900; letter-spacing: 2px; color: var(--gold); 
+            border-bottom: 2px solid #444; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 10;
+        }
+        
+        #v-frame { width: 100%; height: 57vh; overflow: hidden; position: relative; border-bottom: 2px solid #222; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
         #deck { 
-            height: 40vh; display: grid; grid-template-columns: 1.1fr 0.9fr; 
-            background: #080808; padding: 10px; gap: 12px;
+            height: 39vh; display: grid; grid-template-columns: 1fr 1fr; 
+            background: #000; padding: 6px; gap: 8px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+        .panel { display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow: hidden; }
 
-        /* RESULT CARD */
-        .card-strip {
-            width: 100%; background: var(--board); border: 1px solid #333; border-radius: 6px;
-            padding: 8px; display: flex; flex-direction: column; gap: 6px;
+        /* HORIZONTAL SCOREBOARD STRIP */
+        #scoreboard-strip {
+            width: 100%; height: 5.5vh; background: var(--board); border: 1.5px solid #333; border-radius: 4px;
+            display: flex; align-items: center; justify-content: space-around; padding: 0 10px; box-sizing: border-box;
         }
-        .stats-row { display: flex; justify-content: space-around; font-size: 14px; font-weight: 900; }
-        .diamond-row { display: flex; justify-content: center; align-items: center; gap: 12px; border-top: 1px solid #222; padding-top: 6px; }
+        .stat-unit { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 8px; color: #777; font-weight: 800; }
+        .dots { display: flex; gap: 3px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #222; border: 1px solid #444; }
+        .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #e74c3c; }
         
-        #mini-diamond { width: 26px; height: 26px; position: relative; transform: rotate(45deg); }
-        .m-base { position: absolute; width: 6px; height: 6px; border: 1px solid #444; background: #222; }
+        #mini-diamond { width: 28px; height: 28px; position: relative; transform: rotate(45deg); margin-top: 2px; }
+        .m-base { position: absolute; width: 6px; height: 6px; border: 1px solid #333; background: #111; }
         #mb-1 { top: 0; right: 0; } #mb-2 { top: 0; left: 0; } #mb-3 { bottom: 0; left: 0; }
         .m-on { background: var(--gold); border-color: #fff; box-shadow: 0 0 10px var(--gold); }
 
-        #res-main { color: var(--gold); font-size: 12px; font-weight: 900; text-transform: uppercase; }
-
-        /* ARC FIELD */
+        /* CARTOON FIELD */
         #field-container { 
-            width: 100%; flex-grow: 1; background: var(--grass); border-radius: 50% 50% 0 0; 
-            position: relative; overflow: hidden; margin-top: 8px; border: 1px solid #222;
-            border-bottom: none;
+            width: 100%; flex-grow: 1; background: var(--bg); position: relative; overflow: hidden; margin-top: 5px; border-radius: 4px; border: 1.5px solid #222; 
         }
-        .f-line { position: absolute; bottom: 0; width: 1.5px; height: 100%; background: rgba(255,255,255,0.3); transform-origin: bottom; left: 50%; }
+        .field-svg { width: 100%; height: 110%; transform: translateY(8%); }
         
+        .hit-line { stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(255,255,255,0.4)); }
         .hit-dot {
-            position: absolute; width: 16px; height: 16px; background: #000;
-            border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; font-size: 6px; font-weight: 900; transform: translate(-50%, -50%);
+            position: absolute; width: 14px; height: 14px; background: rgba(0,0,0,0.7); 
+            border: 1px solid #fff; border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; font-size: 6px; font-weight: 900; color: #fff; transform: translate(-50%, -50%);
             z-index: 10;
         }
-        .hit-path-line {
-            position: absolute; background: linear-gradient(to top, var(--gold), transparent); width: 1.5px;
-            transform-origin: bottom center; bottom: 0; left: 50%; z-index: 5;
-        }
 
-        /* THUMB-OPTIMIZED STRIKE ZONE */
-        #strike-zone { 
-            width: 135px; height: 170px; border: 2px solid rgba(255,255,255,0.2); 
-            background: rgba(0,0,0,0.4); position: relative; touch-action: none; 
-            border-radius: 8px; margin-top: 10px; /* Lowered for thumb */
+        /* ANCHORED RESULT PANEL */
+        #result-card {
+            width: 100%; height: 6vh; background: var(--board); border: 1.5px solid #333; border-radius: 4px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 5px;
         }
-        #tap-hint {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 10px; font-weight: 900; color: rgba(255,255,255,0.2);
-            letter-spacing: 2px; pointer-events: none;
+        #res-main { color: var(--gold); font-size: 14px; font-weight: 900; text-transform: uppercase; }
+        #res-sub { color: #888; font-size: 8px; font-weight: 700; margin-top: 1px; }
+
+        /* PERFECT SYMMETRICAL TAP ZONE */
+        #strike-zone-box { width: 100%; flex-grow: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+        #strike-zone { 
+            width: 125px; height: 165px; border: 2px solid rgba(255,255,255,0.25); 
+            background: rgba(255,255,255,0.02); position: relative; touch-action: none; 
+            border-radius: 6px; 
         }
         
-        .ball-asset { position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 12px #fff; }
+        .ball-asset { position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; box-shadow: 0 0 10px #fff; }
         .bat-asset { position: absolute; width: 20px; height: 20px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #000; }
+        .pitch-dot { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-<div id="header">CRONIN PRO BROADCAST</div>
+<div id="banner">CRONIN BASEBALL</div>
 <div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
 <div id="deck">
     <div class="panel">
-        <div class="card-strip">
-            <div class="stats-row">
-                <div style="color:var(--blue)">B <span id="b-val">0</span></div>
-                <div style="color:var(--gold)">S <span id="s-val">0</span></div>
-                <div style="color:#e74c3c">O <span id="o-val">0</span></div>
-                <div>R <span id="r-val">0</span></div>
+        <div id="scoreboard-strip">
+            <div class="stat-unit"><span class="stat-label">B</span><div class="dots" id="b-dots"></div></div>
+            <div class="stat-unit"><span class="stat-label">S</span><div class="dots" id="s-dots"></div></div>
+            <div class="stat-unit"><span class="stat-label">O</span><div class="dots" id="o-dots"></div></div>
+            <div id="mini-diamond">
+                <div id="mb-2" class="m-base"></div><div id="mb-1" class="m-base"></div><div id="mb-3" class="m-base"></div>
             </div>
-            <div class="diamond-row">
-                <div id="mini-diamond">
-                    <div id="mb-2" class="m-base"></div><div id="mb-1" class="m-base"></div><div id="mb-3" class="m-base"></div>
-                </div>
-                <div id="res-main">READY</div>
-            </div>
+            <div class="stat-unit"><span class="stat-label">R</span><span class="stat-val" id="r-val">0</span></div>
         </div>
         <div id="field-container">
-            <div class="f-line" style="transform: rotate(-45deg);"></div>
-            <div class="f-line" style="transform: rotate(45deg);"></div>
-        </div>
-    </div>
-
-    <div class="panel">
-        <div id="strike-zone">
-            <div id="tap-hint">TAP TO HIT</div>
-            <div style="position:absolute; width:100%; height:1px; top:33.3%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; width:100%; height:1px; top:66.6%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; height:100%; width:1px; left:33.3%; background:rgba(255,255,255,0.1);"></div>
-            <div style="position:absolute; height:100%; width:1px; left:66.6%; background:rgba(255,255,255,0.1);"></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const v = document.getElementById('v');
-    const sz = document.getElementById('strike-zone');
-    const field = document.getElementById('field-container');
-    const resMain = document.getElementById('res-main');
-
-    const pitches = [
-        { t: 0.92, x: -0.75, y: 0.75, strike: true }, { t: 6.40, x: -0.40, y: 1.00, strike: false },
-        { t: 10.86, x: -0.25, y: 0.25, strike: true }, { t: 16.08, x: 0.15, y: 0.10, strike: true },
-        { t: 21.50, x: -0.95, y: -0.75, strike: false }, { t: 28.03, x: 0.20, y: 0.25, strike: true },
-        { t: 36.17, x: -0.95, y: 0.00, strike: false }, { t: 41.84, x: -0.80, y: 0.25, strike: false }
-    ];
-
-    let g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
-
-    sz.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const now = v.currentTime;
-        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.95);
-        if(g.processed || pIdx === -1) return; 
-        
-        g.processed = true; g.lastIdx = pIdx;
-        const rect = sz.getBoundingClientRect();
-        const tx = e.touches[0].clientX - rect.left;
-        const ty = e.touches[0].clientY - rect.top;
-
-        const p = pitches[pIdx];
-        const px = ((p.x + 1) / 2) * sz.offsetWidth;
-        const py = ((1 - p.y) / 2) * sz.offsetHeight;
-        const dist = Math.sqrt((tx-px)**2 + (ty-py)**2);
-        const tDiff = now - p.t;
-
-        const bat = document.createElement('div'); bat.className='bat-asset';
-        bat.style.left=tx+'px'; bat.style.top=ty+'px'; sz.appendChild(bat);
-        const ball = document.createElement('div'); ball.className='ball-asset';
-        ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
-
-        if(dist < 58) {
-            const la = ((ty - py) / 20) * 45; 
-            const ang = ((tx - px) * 1.6) + (tDiff * 140); 
-            const ev = 110 - (dist * 1.1) - (Math.abs(tDiff) * 300);
-            let ft = (ev * 4.4) * (Math.cos(la * Math.PI / 180));
-            if (la < -5) ft = Math.min(ft, 105); 
-            if (la > 40) ft = Math.min(ft, 255); 
-            handleHit(ft, ang, la);
-        } else { addStrike("WHIFF"); }
-        updateUI();
-    });
-
-    function handleHit(ft, angle, la) {
-        let res = "OUT"; let move = 0; let tag = "OUT";
-        if(Math.abs(angle) > 45) { addStrike("FOUL"); return; } 
-
-        if (ft < 112) { res = la < 0 ? "GROUND OUT" : "POP OUT"; tag = "OUT"; }
-        else if (ft < 228) { res = "SINGLE"; move = 1; tag = "1B"; }
-        else if (ft < 328) { res = "DOUBLE"; move = 2; tag = "2B"; }
-        else {
-            let fence = (Math.abs(angle) > 30) ? 335 : 402;
-            if (ft >= fence) { res = "HOME RUN"; move = 4; tag = "HR"; }
-            else { res = "TRIPLE"; move = 3; tag = "3B"; }
-        }
-        
-        resMain.innerText = res;
-        
-        // Proportional Scaling (assuming 420ft max visual)
-        const scale = Math.min(ft, 420) / 420;
-        const visualDist = scale * 95; // 95% of field height
-
-        const pathLine = document.createElement('div');
-        pathLine.className = 'hit-path-line';
-        pathLine.style.height = visualDist + "%";
-        pathLine.style.transform = `rotate(${angle * 0.8}deg)`;
-        field.appendChild(pathLine);
-
-        const dot = document.createElement('div');
-        dot.className = 'hit-dot';
-        dot.innerText = tag;
-        // Trig for dot position based on angle and scaled distance
-        const rad = (90 - (angle * 0.8)) * Math.PI / 180;
-        dot.style.left = (50 + (visualDist * Math.cos(rad))) + "%";
-        dot.style.bottom = (visualDist * Math.sin(rad)) + "%";
-        field.appendChild(dot);
-
-        if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
-        else { g.o++; g.b = 0; g.s = 0; checkState(); }
-    }
-
-    function advanceRunners(bases) {
-        for(let i=0; i<bases; i++) {
-            if(g.bases[2]) g.r++;
-            g.bases[2] = g.bases[1]; g.bases[1] = g.bases[0];
-            g.bases[0] = (i === 0 && bases < 4); 
-            if(bases === 4 && i === 3) g.r++;
-        }
-    }
-
-    function addStrike(reason) {
-        if (reason === "FOUL") {
-            if (g.s < 2) g.s++;
-            resMain.innerText = "FOUL BALL";
-        } else {
-            g.s++;
-            resMain.innerText = reason === "WHIFF" ? "STRIKE" : "STRIKE";
-            if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; resMain.innerText = "STRIKEOUT"; checkState(); }
-        }
-    }
-
-    function addBall() {
-        g.b++; resMain.innerText = "BALL";
-        if(g.b >= 4) {
-            g.b = 0; g.s = 0; resMain.innerText = "WALK";
-            if (g.bases[0] && g.bases[1] && g.bases[2]) g.r++;
-            else if (g.bases[0] && g.bases[1]) g.bases[2] = true;
-            else if (g.bases[0]) g.bases[1] = true;
-            g.bases[0] = true;
-        }
-    }
-
-    function checkState() {
-        if(g.o >= 3) { g.o = 0; g.bases = [false,false,false]; resMain.innerText = "SIDE RETIRED"; }
-    }
-
-    function updateUI() {
-        document.getElementById('r-val').innerText = g.r;
-        document.getElementById('b-val').innerText = g.b;
-        document.getElementById('s-val').innerText = g.s;
-        document.getElementById('o-val').innerText = g.o;
-        document.getElementById('mb-1').className = `m-base ${g.bases[0]?'m-on':''}`;
-        document.getElementById('mb-2').className = `m-base ${g.bases[1]?'m-on':''}`;
-        document.getElementById('mb-3').className = `m-base ${g.bases[2]?'m-on':''}`;
-    }
-
-    setInterval(() => {
-        const now = v.currentTime;
-        const autoIdx = pitches.findIndex(p => now > p.t + 0.85 && g.lastIdx < pitches.indexOf(p));
-        if(autoIdx !== -1) {
-            g.lastIdx = autoIdx; g.processed = true;
-            if(pitches[autoIdx].strike) addStrike("TAKEN"); else addBall();
-            updateUI();
-        }
-
-        const nextP = pitches.find(p => p.t > now);
-        if(nextP && (nextP.t - now < 3.0)) {
-            sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
-            if(resMain.innerText !== "READY") resMain.innerText = "";
-        }
-
-        if (now < 0.2) {
-            if (g.lastIdx !== -1) {
-                g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
-                field.querySelectorAll('.hit-dot, .hit-path-line').forEach(el => el.remove());
-                sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
-                resMain.innerText = "READY"; 
-                updateUI();
-            }
-        } else {
-            if(g.processed && !pitches.some(p => Math.abs(now - p.t) < 0.95)) g.processed = false;
-        }
-    }, 50);
-
-    updateUI();
-</script>
-</body>
-</html>
+            <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="95" r="70" fill="#222" /> <path d="M50 95 L1 45 A 70 70 0 0 1 99 45
