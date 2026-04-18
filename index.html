@@ -5,63 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cronin Baseball Pro</title>
     <style>
-        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #1e3d1a; --dirt: #8b6e4b; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --grass: #3d7a35; --dirt: #c2a382; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
 
-        #header { height: 3vh; background: #111; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; letter-spacing: 2px; color: var(--gold); border-bottom: 1px solid #333; z-index: 10; }
+        #header { height: 3vh; background: #111; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; letter-spacing: 2px; color: var(--gold); z-index: 10; }
         
         #v-frame { width: 100%; height: 62vh; overflow: hidden; position: relative; background: #000; }
         video { height: 100%; width: auto; object-fit: contain; position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
         #deck { 
-            height: 35vh; display: grid; grid-template-columns: 1fr 1fr; 
-            background: var(--bg); padding: 8px; gap: 10px;
+            height: 35vh; display: grid; grid-template-columns: 1.1fr 0.9fr; 
+            background: var(--bg); padding: 5px 10px; gap: 10px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .left-panel { display: flex; flex-direction: column; gap: 5px; align-items: center; }
-        .score-box { width: 100%; background: #111; padding: 6px; border-radius: 4px; display: flex; justify-content: space-around; font-size: 10px; font-weight: 900; border: 1px solid #333; }
+        .left-panel { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: flex-end; }
+        .score-box { width: 100%; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 4px; display: flex; justify-content: space-around; font-size: 11px; font-weight: 900; }
         
-        /* IMPROVED FIELD LOOK */
+        /* PROPORTIONAL FLOATING FIELD */
         #field-container { 
-            width: 100%; max-width: 160px; aspect-ratio: 1/1; 
-            background: #050505; border: 2px solid #222; border-radius: 10px; 
-            position: relative; overflow: hidden;
+            width: 110%; max-width: 200px; aspect-ratio: 1/1; 
+            position: relative; overflow: visible; transform: translateY(5px);
         }
-        .field-svg { width: 100%; height: 100%; }
+        .field-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
 
-        .base-diamond { position: absolute; bottom: 12%; left: 50%; width: 40px; height: 40px; transform: translateX(-50%); pointer-events: none; z-index: 5; }
-        .base { position: absolute; width: 5px; height: 5px; background: #555; transform: rotate(45deg); border: 1px solid #777; }
-        #base-home { bottom: 0; left: 17.5px; width: 6px; height: 6px; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); transform: none; background: #fff; }
-        #base-1 { bottom: 17.5px; right: 0; } #base-2 { top: 0; left: 17.5px; } #base-3 { bottom: 17.5px; left: 0; }
-        .runner { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); }
+        .base-diamond { position: absolute; bottom: 10%; left: 50%; width: 34px; height: 34px; transform: translateX(-50%); pointer-events: none; z-index: 5; }
+        .base { position: absolute; width: 5px; height: 5px; background: #666; transform: rotate(45deg); border: 1px solid #888; }
+        #base-home { bottom: 0; left: 14.5px; width: 6px; height: 6px; clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 50% 100%, 0% 50%); transform: none; background: #fff; }
+        #base-1 { bottom: 14.5px; right: 0; } #base-2 { top: 0; left: 14.5px; } #base-3 { bottom: 14.5px; left: 0; }
+        .runner { background: var(--gold) !important; box-shadow: 0 0 12px var(--gold); border-color: #fff !important; }
 
-        .right-panel { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: flex-start; }
+        .right-panel { display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: flex-end; }
         
-        /* SMALLER, HIGHER RESULTS */
-        #feedback-area { width: 100%; text-align: center; height: 40px; display: flex; flex-direction: column; justify-content: center; }
-        #res-main { color: var(--gold); font-size: 13px; font-weight: 900; margin: 0; }
-        #res-sub { color: #888; font-size: 8px; font-weight: 700; margin: 0; }
+        #feedback-area { width: 100%; text-align: center; height: 35px; }
+        #res-main { color: var(--gold); font-size: 12px; font-weight: 900; margin: 0; text-transform: uppercase; }
+        #res-sub { color: #aaa; font-size: 8px; font-weight: 700; margin: 0; }
 
-        /* BIGGER TAP BOX (STRIKE ZONE) */
+        /* LOWER STRIKE ZONE */
         #strike-zone { 
-            width: 130px; height: 160px; border: 2px solid rgba(255,255,255,0.15); 
-            background: rgba(255,255,255,0.02); position: relative; touch-action: none; 
-            border-radius: 6px; margin-top: 5px;
+            width: 125px; height: 155px; border: 1.5px solid rgba(255,255,255,0.2); 
+            background: rgba(255,255,255,0.03); position: relative; touch-action: none; 
+            border-radius: 4px; margin-bottom: 5px;
         }
         
-        .ball-asset { position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; border: 1px solid #999; }
+        .ball-asset { position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; border: 1px solid #999; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
         .bat-asset { position: absolute; width: 18px; height: 18px; background: #5d4037; border-radius: 50%; transform: translate(-50%, -50%); z-index: 4; border: 1px solid #3e2723; }
-        .dot { width: 7px; height: 7px; border-radius: 50%; background: #222; border: 1px solid #444; }
-        .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #e74c3c; }
+        
+        .hit-line { filter: drop-shadow(0 0 3px rgba(255,255,255,0.5)); stroke-linecap: round; }
+        .hit-point { fill: #fff; filter: drop-shadow(0 0 5px #fff); }
     </style>
 </head>
 <body>
 
-<div id="header">CRONIN BASEBALL PRO</div>
+<div id="header">CRONIN BASEBALL</div>
 <div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
@@ -69,19 +68,28 @@
 <div id="deck">
     <div class="left-panel">
         <div class="score-box">
-            <div>B: <span id="b-dots" style="color:var(--blue)">0</span></div>
-            <div>S: <span id="s-dots" style="color:var(--gold)">0</span></div>
-            <div>O: <span id="o-dots" style="color:#e74c3c)">0</span></div>
-            <div>R: <span id="r-val">0</span></div>
+            <div style="color:var(--blue)">B: <span id="b-val">0</span></div>
+            <div style="color:var(--gold)">S: <span id="s-val">0</span></div>
+            <div style="color:#e74c3c">O: <span id="o-val">0</span></div>
+            <div style="color:#fff">R: <span id="r-val">0</span></div>
         </div>
         <div id="field-container">
-            <svg class="field-svg" id="main-field" viewBox="0 0 100 100">
-                <path d="M50 95 L5 50 A 65 65 0 0 1 95 50 L50 95" fill="var(--grass)" />
-                <path d="M50 95 L22 67 L50 39 L78 67 Z" fill="var(--dirt)" />
-                <path d="M50 85 L35 70 L50 55 L65 70 Z" fill="var(--grass)" />
-                <circle cx="50" cy="67" r="3" fill="#6d553b" />
-                <line x1="50" y1="95" x2="10" y2="55" stroke="#fff" stroke-width="0.8" />
-                <line x1="50" y1="95" x2="90" y2="55" stroke="#fff" stroke-width="0.8" />
+            <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
+                <defs>
+                    <radialGradient id="grassGrad" cx="50%" cy="100%" r="100%">
+                        <stop offset="0%" style="stop-color:#4a8a3f" />
+                        <stop offset="100%" style="stop-color:#2d5a27" />
+                    </radialGradient>
+                </defs>
+                <path d="M50 95 L2 55 A 65 65 0 0 1 98 55 L50 95" fill="url(#grassGrad)" />
+                <path d="M50 95 L28 73 L50 51 L72 73 Z" fill="var(--dirt)" />
+                <path d="M50 88 L38 76 L50 64 L62 76 Z" fill="#3d7a35" />
+                <path d="M15 65 A 45 45 0 0 1 85 65" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+                <text x="50" y="35" font-size="3" fill="#fff" text-anchor="middle" opacity="0.5">375</text>
+                <text x="12" y="52" font-size="3" fill="#fff" text-anchor="middle" opacity="0.5">330</text>
+                <text x="88" y="52" font-size="3" fill="#fff" text-anchor="middle" opacity="0.5">330</text>
+                <line x1="50" y1="95" x2="2" y2="55" stroke="#fff" stroke-width="0.6" />
+                <line x1="50" y1="95" x2="98" y2="55" stroke="#fff" stroke-width="0.6" />
             </svg>
             <div class="base-diamond">
                 <div id="base-2" class="base"></div><div id="base-3" class="base"></div><div id="base-1" class="base"></div><div id="base-home" class="base"></div>
@@ -106,7 +114,7 @@
 <script>
     const v = document.getElementById('v');
     const sz = document.getElementById('strike-zone');
-    const field = document.getElementById('main-field');
+    const fSvg = document.getElementById('field-svg');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75, strike: true }, { t: 6.40, x: -0.40, y: 1.00, strike: false },
@@ -120,13 +128,10 @@
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
         const now = v.currentTime;
-        // Wider window (0.9s) to ensure the tap is caught
         const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.9);
-        
         if(g.processed || pIdx === -1) return; 
-        g.processed = true; 
-        g.lastIdx = pIdx;
-
+        
+        g.processed = true; g.lastIdx = pIdx;
         const rect = sz.getBoundingClientRect();
         const tx = e.touches[0].clientX - rect.left;
         const ty = e.touches[0].clientY - rect.top;
@@ -143,17 +148,13 @@
         ball.style.left=px+'px'; ball.style.top=py+'px'; sz.appendChild(ball);
 
         if(dist < 55) {
-            const yOffset = ty - py; 
-            const xOffset = tx - px;
-            let launchAngle = (yOffset / 20) * 40; 
-            let hitAngle = (xOffset * 1.6) + (tDiff * 140); 
-            let exitVel = 105 - (dist * 1.2) - (Math.abs(tDiff) * 280);
-            let distance = (exitVel * 4.2) * (Math.cos(launchAngle * Math.PI / 180));
-
-            if (launchAngle < -5) distance = Math.min(distance, 95); 
-            if (launchAngle > 35) distance = Math.min(distance, 250); 
-            
-            handleHit(distance, hitAngle, launchAngle, exitVel);
+            const launchAngle = ((ty - py) / 20) * 45; 
+            const hitAngle = ((tx - px) * 1.6) + (tDiff * 140); 
+            const exitVel = 108 - (dist * 1.2) - (Math.abs(tDiff) * 300);
+            let ft = (exitVel * 4.3) * (Math.cos(launchAngle * Math.PI / 180));
+            if (launchAngle < -5) ft = Math.min(ft, 100); 
+            if (launchAngle > 40) ft = Math.min(ft, 260); 
+            handleHit(ft, hitAngle, launchAngle, exitVel);
         } else { addStrike("WHIFF"); }
         updateUI();
     });
@@ -161,25 +162,32 @@
     function handleHit(ft, angle, la, ev) {
         let res = "OUT"; let move = 0;
         let absAngle = Math.abs(angle);
-        if(absAngle > 54) { addStrike("FOUL"); return; }
+        if(absAngle > 55) { addStrike("FOUL"); return; }
 
-        if (ft < 105) { res = la < 0 ? "GROUND OUT" : "POP OUT"; }
-        else if (ft < 220) { res = "SINGLE"; move = 1; }
-        else if (ft < 320) { res = "DOUBLE"; move = 2; }
+        if (ft < 110) res = la < 0 ? "GROUND OUT" : "POP OUT";
+        else if (ft < 225) { res = "SINGLE"; move = 1; }
+        else if (ft < 325) { res = "DOUBLE"; move = 2; }
         else {
-            let fence = (absAngle > 35) ? 335 : 395;
+            let fence = (absAngle > 35) ? 335 : 405;
             if (ft >= fence) { res = "HOME RUN"; move = 4; }
             else { res = "TRIPLE"; move = 3; }
         }
         
-        showMsg(res, `${Math.floor(ev)} MPH • ${Math.floor(la)}° • ${Math.floor(ft)}FT`);
+        showMsg(res, `${Math.floor(ev)} MPH • ${Math.floor(ft)} FT`);
         
+        // Draw Hit Path
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        const endX = 50 + (angle * 0.85);
+        const endY = 95 - (Math.min(ft, 420)/4.4);
         line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
-        line.setAttribute("x2", 50 + (angle * 0.75)); line.setAttribute("y2", 95 - (Math.min(ft, 420)/4.4));
-        line.setAttribute("stroke", move > 0 ? "var(--gold)" : "#666");
-        line.setAttribute("stroke-width", "2"); line.setAttribute("class", "hit-l");
-        field.appendChild(line);
+        line.setAttribute("x2", endX); line.setAttribute("y2", endY);
+        line.setAttribute("stroke", move > 0 ? "var(--gold)" : "#888");
+        line.setAttribute("stroke-width", "2"); line.setAttribute("class", "hit-line");
+        fSvg.appendChild(line);
+
+        const pt = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pt.setAttribute("cx", endX); pt.setAttribute("cy", endY); pt.setAttribute("r", "1.5");
+        pt.setAttribute("class", "hit-point"); fSvg.appendChild(pt);
 
         if(move > 0) { g.b = 0; g.s = 0; advanceRunners(move); } 
         else { g.o++; g.b = 0; g.s = 0; checkState(); }
@@ -195,7 +203,7 @@
     }
 
     function addStrike(reason) {
-        if (reason.includes("FOUL") && g.s === 2) { showMsg("FOUL", "COUNT HELD"); } 
+        if (reason.includes("FOUL") && g.s === 2) showMsg("FOUL", "COUNT HELD");
         else {
             g.s++; showMsg("STRIKE", reason);
             if(g.s >= 3) { g.s = 0; g.b = 0; g.o++; showMsg("OUT", "STRIKEOUT"); checkState(); }
@@ -221,9 +229,9 @@
 
     function updateUI() {
         document.getElementById('r-val').innerText = g.r;
-        document.getElementById('b-dots').innerText = g.b;
-        document.getElementById('s-dots').innerText = g.s;
-        document.getElementById('o-dots').innerText = g.o;
+        document.getElementById('b-val').innerText = g.b;
+        document.getElementById('s-val').innerText = g.s;
+        document.getElementById('o-val').innerText = g.o;
         document.getElementById('base-1').className = `base ${g.bases[0]?'runner':''}`;
         document.getElementById('base-2').className = `base ${g.bases[1]?'runner':''}`;
         document.getElementById('base-3').className = `base ${g.bases[2]?'runner':''}`;
@@ -232,28 +240,27 @@
     setInterval(() => {
         const now = v.currentTime;
         
-        // Ensure automatic pitch calls for skipped pitches
-        const autoIdx = pitches.findIndex(p => now > p.t + 0.7 && g.lastIdx < pitches.indexOf(p));
+        // AUTO-CALLS FOR SKIPPED PITCHES
+        const autoIdx = pitches.findIndex(p => now > p.t + 0.8 && g.lastIdx < pitches.indexOf(p));
         if(autoIdx !== -1) {
             g.lastIdx = autoIdx; g.processed = true;
-            if(pitches[autoIdx].strike) { addStrike("TAKEN"); } else { addBall("OUTSIDE"); }
+            if(pitches[autoIdx].strike) addStrike("TAKEN"); else addBall("OUTSIDE");
             updateUI();
         }
 
-        // RESET: Only happens once at the very start of the loop
-        if (now < 0.25) {
+        // FULL RESET LOGIC ON LOOP
+        if (now < 0.2) {
             if (g.lastIdx !== -1) {
-                g.processed = false; g.lastIdx = -1;
-                document.querySelectorAll('.hit-l').forEach(l => l.remove());
+                // Wipe game state
+                g = { r:0, b:0, s:0, o:0, bases:[false,false,false], lastIdx: -1, processed: false };
+                // Wipe visuals
+                document.querySelectorAll('.hit-line, .hit-point').forEach(el => el.remove());
                 sz.querySelectorAll('.ball-asset, .bat-asset').forEach(el => el.remove());
                 showMsg("READY", "WAITING FOR PITCH"); 
                 updateUI();
             }
         } else {
-            // Re-enable processing if we move past a pitch window
-            if(g.processed && !pitches.some(p => Math.abs(now - p.t) < 0.9)) {
-                g.processed = false;
-            }
+            if(g.processed && !pitches.some(p => Math.abs(now - p.t) < 0.9)) g.processed = false;
         }
     }, 50);
 
