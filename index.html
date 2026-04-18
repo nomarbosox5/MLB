@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Cronin Statcast Pro</title>
     <style>
-        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; }
+        :root { --gold: #f1c40f; --orange: #e67e22; --blue: #3498db; --bg: #050505; --field-green: #1a331a; }
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Inter', sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
@@ -23,32 +23,40 @@
 
         /* Left Side: Field & Stats */
         .left-panel { display: flex; flex-direction: column; gap: 8px; position: relative; }
-        #spray-field { 
-            flex-grow: 1; background: #0d1a0d; border: 1px solid #222; border-radius: 8px; position: relative; overflow: hidden;
-            background-image: radial-gradient(circle at 50% 90%, #1a331a 0%, #0d1a0d 100%);
+        
+        /* Compact Pro Field */
+        #field-container { 
+            flex-grow: 1; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
-        .field-svg { width: 100%; height: 100%; }
+        .field-svg { width: 95%; height: 95%; transform: scale(1.1); }
 
         .broadcast-data { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; border-left: 3px solid var(--gold); }
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 800; font-size: 13px; }
-        .dots { display: flex; gap: 4px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; border: 1px solid #444; }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; font-weight: 800; font-size: 12px; }
+        .dots { display: flex; gap: 3px; }
+        .dot { width: 9px; height: 9px; border-radius: 50%; background: #222; border: 1px solid #444; }
         .b-on { background: var(--blue); } .s-on { background: var(--gold); } .o-on { background: #ff4757; }
 
-        /* Diamond UI */
-        .diamond-hud { display: flex; gap: 8px; margin-bottom: 5px; }
-        .base-pip { width: 14px; height: 14px; background: #222; transform: rotate(45deg); border: 1px solid #444; }
-        .occupied { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); border-color: #fff; }
+        /* Proper Diamond Formation */
+        .diamond-formation { 
+            position: absolute; bottom: 80px; right: 10px; width: 50px; height: 50px; 
+            display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
+        .base-pip { position: absolute; width: 10px; height: 10px; background: #222; transform: rotate(45deg); border: 1px solid #444; transition: 0.3s; }
+        #pip-2 { top: 0; left: 20px; } /* Second Base */
+        #pip-3 { top: 20px; left: 0; }  /* Third Base */
+        #pip-1 { top: 20px; right: 0; } /* First Base */
+        .occupied { background: var(--gold) !important; box-shadow: 0 0 10px var(--gold); border-color: #fff; }
 
         /* Right Side: Strike Zone */
-        .zone-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+        .zone-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
         #sz { 
             width: 160px; height: 210px; border: 2px solid rgba(255,255,255,0.3); 
             position: relative; background: rgba(255,255,255,0.02); touch-action: none;
         }
         .grid { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
         .ball-sprite { position: absolute; width: 24px; height: 24px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #ccc; box-shadow: 0 0 10px #fff; z-index: 10; font-size: 10px; color: #000; font-weight: 900; display: flex; align-items: center; justify-content: center; }
-        .preview-ball { position: absolute; width: 20px; height: 20px; background: rgba(255,255,255,0.15); border: 1px dashed #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        .preview-ball { position: absolute; width: 18px; height: 18px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -61,20 +69,20 @@
     <div class="left-panel">
         <div class="broadcast-data">
             <div class="row">RUNS <span id="r-val" style="color:var(--gold)">0</span></div>
-            <div class="row">BALLS <div class="dots" id="b-dots"></div></div>
-            <div class="row">STRIKES <div class="dots" id="s-dots"></div></div>
-            <div class="row">OUTS <div class="dots" id="o-dots"></div></div>
+            <div class="row">B <div class="dots" id="b-dots"></div> S <div class="dots" id="s-dots"></div> O <div class="dots" id="o-dots"></div></div>
         </div>
         
-        <div class="diamond-hud">
-            <div id="pip-3" class="base-pip"></div>
-            <div id="pip-2" class="base-pip"></div>
-            <div id="pip-1" class="base-pip"></div>
-        </div>
-
-        <div id="spray-field">
+        <div id="field-container">
+            <div class="diamond-formation">
+                <div id="pip-2" class="base-pip"></div>
+                <div id="pip-3" class="base-pip"></div>
+                <div id="pip-1" class="base-pip"></div>
+            </div>
             <svg class="field-svg" id="field-svg" viewBox="0 0 100 100">
-                <path d="M50 95 L10 40 Q50 0 90 40 Z" fill="none" stroke="#222" stroke-width="0.5"/>
+                <path d="M50 95 L15 45 Q50 5 85 45 Z" fill="#142614" />
+                <line x1="50" y1="95" x2="10" y2="40" stroke="white" stroke-width="0.5" />
+                <line x1="50" y1="95" x2="90" y2="40" stroke="white" stroke-width="0.5" />
+                <circle cx="50" cy="95" r="30" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2,2" /> <circle cx="50" cy="95" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2,2" /> <circle cx="50" cy="95" r="70" fill="none" stroke="rgba(255,255,255,0.2)" /> <text x="50" y="22" font-size="3" fill="#444" text-anchor="middle">HR FENCE</text>
             </svg>
         </div>
     </div>
@@ -86,7 +94,7 @@
             <div class="grid" style="height:1px; width:100%; top:33.3%"></div>
             <div class="grid" style="height:1px; width:100%; top:66.6%"></div>
         </div>
-        <div style="font-size: 10px; color: #555; letter-spacing: 2px;">TAP TO HIT</div>
+        <div style="font-size: 9px; color: #444; letter-spacing: 1px; font-weight: 700;">STRIKE ZONE SIMULATOR</div>
     </div>
 </div>
 
@@ -106,8 +114,11 @@
 
     function drawHit(ft, angle) {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        const x2 = 50 + (Math.sin(angle * 0.05) * (ft/6));
-        const y2 = 95 - (ft/5);
+        // Scale distance to fit SVG (max ft ~450 -> radius ~80)
+        const radius = (ft / 450) * 80;
+        const x2 = 50 + (angle * 0.8);
+        const y2 = 95 - radius;
+        
         line.setAttribute("x1", "50"); line.setAttribute("y1", "95");
         line.setAttribute("x2", x2); line.setAttribute("y2", y2);
         line.setAttribute("stroke", "var(--orange)");
@@ -153,7 +164,7 @@
             ball.style.left = px+'px'; ball.style.top = py+'px'; sz.appendChild(ball);
 
             if(dist < 40) {
-                let ft = Math.floor(400 - (dist * 4));
+                let ft = Math.floor(420 - (dist * 4));
                 drawHit(ft, tx-px);
                 handleHitLogic(ft);
             } else { game.s++; }
