@@ -3,76 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Challenge - Fixed Layout</title>
+    <title>MLB Challenge - Pro Sync</title>
     <style>
-        /* Force the body to be exactly the height of the phone screen */
         body { 
-            margin: 0; 
-            background: #000; 
-            color: white; 
+            margin: 0; background: #000; color: white; 
             font-family: -apple-system, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
+            display: flex; flex-direction: column; 
+            height: 100vh; overflow: hidden; 
         }
 
-        /* Top Section: Fixed Video */
-        #video-section { 
+        /* Top Section: The Video */
+        #video-container { 
             width: 100%; 
             background: #111; 
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
         }
         video { 
             width: 100%; 
+            height: auto; 
+            max-height: 45vh; 
             display: block; 
-            max-height: 40vh; /* Limits video to top 40% of screen */
         }
 
-        /* Bottom Section: Dashboard */
-        #dashboard { 
+        /* Bottom Section: The Dashboard */
+        #ui-layer { 
             flex-grow: 1; 
             display: flex; 
             align-items: center; 
-            justify-content: space-around; 
-            padding: 20px; 
+            justify-content: center; 
+            gap: 25px; 
+            padding: 10px; 
         }
 
-        #results { width: 150px; }
-        #outcome { font-size: 2rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
-        #status { font-size: 0.9rem; color: #888; margin-top: 5px; }
+        #results-area { width: 160px; }
+        #outcome { font-size: 2.2rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
+        #timing { font-size: 0.9rem; color: #666; letter-spacing: 1px; text-transform: uppercase; }
 
-        /* The Nestico Box */
+        /* Nestico Box */
         #statcast-box { 
-            width: 130px; 
-            height: 180px; 
-            border: 3px solid #fff; 
-            position: relative; 
-            background: rgba(255,255,255,0.05);
+            width: 140px; height: 190px; border: 3px solid #fff; 
+            position: relative; background: rgba(255,255,255,0.05);
         }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #pitch-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; }
-        #swing-dot { width: 28px; height: 28px; background: #ff4d4d; border: 2px solid #fff; display: none; }
+        #pitch-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 12px #fff; }
+        #swing-dot { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; display: none; }
         
-        #tap-zone { position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px; z-index: 10; }
+        #tap-surface { position: absolute; top: -50px; left: -50px; right: -50px; bottom: -50px; z-index: 10; }
     </style>
 </head>
 <body>
 
-    <div id="video-section">
+    <div id="video-container">
         <video id="v" autoplay muted loop playsinline>
-            <source src="https://github.com/nomarbosox5/MLB/raw/refs/heads/main/ScreenRecording_04-17-2026%2000-42-49_1.mov" type="video/quicktime">
+            <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
         </video>
     </div>
 
-    <div id="dashboard">
-        <div id="results">
+    <div id="ui-layer">
+        <div id="results-area">
             <h1 id="outcome">READY</h1>
-            <div id="status">Watch the Pitch</div>
+            <div id="timing">WATCH ZONE</div>
         </div>
 
         <div id="statcast-box">
-            <div id="tap-zone"></div>
+            <div id="tap-surface"></div>
             <div id="pitch-dot" class="dot"></div>
             <div id="swing-dot" class="dot"></div>
         </div>
@@ -81,47 +76,46 @@
 <script>
     const video = document.getElementById('v');
     const outcome = document.getElementById('outcome');
-    const status = document.getElementById('status');
-    const pitchDot = document.getElementById('pitch-dot');
-    const swingDot = document.getElementById('swing-dot');
+    const timing = document.getElementById('timing');
+    const pDot = document.getElementById('pitch-dot');
+    const sDot = document.getElementById('swing-dot');
 
-    // Hardcoded Target per your new video timing
-    const TARGET = { t: 1.25, x: 20, y: 160 }; 
+    // Update these two values for your first hardcoded pitch in the new video
+    const IMPACT_T = 1.25; 
+    const COORDS = { x: 20, y: 170 }; 
 
     video.addEventListener('timeupdate', () => {
-        // Position the dot
-        pitchDot.style.left = TARGET.x + 'px';
-        pitchDot.style.top = TARGET.y + 'px';
+        pDot.style.left = COORDS.x + 'px';
+        pDot.style.top = COORDS.y + 'px';
 
-        // Visibility based on timing
-        if (Math.abs(video.currentTime - TARGET.t) < 0.2) {
-            pitchDot.style.opacity = "1";
+        if (Math.abs(video.currentTime - IMPACT_T) < 0.2) {
+            pDot.style.opacity = "1";
         } else {
-            pitchDot.style.opacity = "0";
-            if (video.currentTime < 0.1) swingDot.style.display = "none";
+            pDot.style.opacity = "0";
+            if (video.currentTime < 0.1) sDot.style.display = "none";
         }
     });
 
-    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
+    document.getElementById('tap-surface').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const rect = document.getElementById('statcast-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
 
-        swingDot.style.left = ux + 'px';
-        swingDot.style.top = uy + 'px';
-        swingDot.style.display = 'block';
+        sDot.style.left = ux + 'px';
+        sDot.style.top = uy + 'px';
+        sDot.style.display = 'block';
 
-        const timeDiff = Math.abs(video.currentTime - TARGET.t);
+        const diff = Math.abs(video.currentTime - IMPACT_T);
         
-        if (timeDiff < 0.25) {
+        if (diff < 0.2) {
             outcome.innerText = "HOME RUN";
             outcome.style.color = "#00ffcc";
-            status.innerText = "PERFECT TIMING";
+            timing.innerText = "PERFECT";
         } else {
             outcome.innerText = "WHIFF";
             outcome.style.color = "#ff4d4d";
-            status.innerText = video.currentTime < TARGET.t ? "TOO EARLY" : "TOO LATE";
+            timing.innerText = video.currentTime < IMPACT_T ? "EARLY" : "LATE";
         }
     });
 </script>
