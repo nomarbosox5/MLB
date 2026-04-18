@@ -3,36 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pro - 0.7 Zone Statcast</title>
+    <title>MLB Statcast Pro</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        #v-sec { width: 100%; background: #000; flex-shrink: 0; border-bottom: 2px solid #333; }
-        video { width: 100%; max-height: 42vh; display: block; }
-
-        #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; }
+        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* Results placed to the LEFT of the box */
-        #res { width: 160px; display: flex; flex-direction: column; gap: 4px; min-height: 150px; }
-        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0 0 5px 0; min-height: 2.2rem; }
-        .stat { font-size: 0.8rem; font-family: 'Courier New', monospace; color: #888; letter-spacing: 1px; }
-        .stat span { color: #fff; font-weight: bold; }
+        /* VIDEO SECTION */
+        #v-sec { width: 100%; position: relative; border-bottom: 2px solid #333; }
+        video { width: 100%; max-height: 40vh; display: block; }
 
-        /* Nestico Container: 160x200 */
-        #nestico-box { position: relative; width: 160px; height: 200px; }
-        #strike-zone { 
-            position: absolute; 
-            left: 43px; /* Mapped to -0.7 Nestico */
-            top: 33px;  /* Mapped to 3.5 Nestico */
-            width: 74px; /* 0.7 to -0.7 width */
-            height: 133px; /* 1.5 to 3.5 height */
-            border: 3px solid rgba(255,255,255,0.9); 
-            background: rgba(255,255,255,0.08);
-        }
+        /* SCOREBUG (Top Right over Video) */
+        #scorebug { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 4px; display: flex; gap: 15px; border: 1px solid #444; font-size: 0.9rem; font-weight: bold; }
+        .diamond-box { display: grid; grid-template-columns: repeat(2, 10px); gap: 4px; transform: rotate(45deg); margin-top: 4px; }
+        .base { width: 8px; height: 8px; border: 1px solid #666; }
+        .base.active { background: #f1c40f; border-color: #fff; }
+
+        /* MAIN DASHBOARD */
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px 1fr; align-items: center; padding: 10px; gap: 10px; }
         
+        /* LEFT: TELEMETRY */
+        #telemetry { display: flex; flex-direction: column; gap: 4px; }
+        #outcome { font-size: 1.5rem; font-weight: 900; color: #00ffcc; margin: 0; min-height: 1.8rem; text-transform: uppercase; }
+        .stat { font-size: 0.75rem; color: #888; font-family: monospace; }
+        .stat span { color: #fff; }
+
+        /* CENTER: NESTICO BOX */
+        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.02); }
+        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.8); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #p-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
-        #s-dot { width: 30px; height: 30px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #p-dot { width: 16px; height: 16px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; z-index: 5; }
+        #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 1px solid #fff; display: none; z-index: 6; }
         #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
+
+        /* RIGHT: FIELD VISUALIZER */
+        #field-container { position: relative; width: 100px; height: 100px; background: #1a1a1a; border-radius: 0 100% 0 0; transform: rotate(-45deg); border-left: 2px solid #444; border-bottom: 2px solid #444; overflow: hidden; }
+        #hit-line { position: absolute; bottom: 0; left: 0; height: 2px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body>
@@ -41,14 +45,23 @@
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
+    <div id="scorebug">
+        <div>NYM <span>0</span><br>LAD <span>2</span></div>
+        <div id="count">1 - 0</div>
+        <div class="diamond-box">
+            <div class="base" id="b2"></div>
+            <div class="base active" id="b1"></div>
+            <div class="base" id="b3"></div>
+        </div>
+    </div>
 </div>
 
 <div id="dashboard">
-    <div id="res">
+    <div id="telemetry">
         <h1 id="outcome"></h1>
-        <div class="stat">EXIT VELO: <span id="v-exit">-</span></div>
-        <div class="stat">LAUNCH ANGLE: <span id="v-ang">-</span></div>
-        <div class="stat">DISTANCE: <span id="v-dist">-</span></div>
+        <div class="stat">EXIT VELO: <span id="s-exit">-</span></div>
+        <div class="stat">LAUNCH ANGLE: <span id="s-ang">-</span></div>
+        <div class="stat">DISTANCE: <span id="s-dist">-</span></div>
     </div>
 
     <div id="nestico-box">
@@ -57,50 +70,42 @@
         <div id="p-dot" class="dot"></div>
         <div id="s-dot" class="dot"></div>
     </div>
+
+    <div id="field-container">
+        <div id="hit-line"></div>
+    </div>
 </div>
 
 <script>
     const video = document.getElementById('v');
-    const outcome = document.getElementById('outcome');
-    const pDot = document.getElementById('p-dot');
-    const sDot = document.getElementById('s-dot');
-
     const PITCHES = [
-        { id:1, t:0.95,  nx:-0.70, ny:3.25 },
+        { id:1, t:0.95,  nx:-0.75, ny:3.25 },
         { id:2, t:6.40,  nx:-0.40, ny:3.50 },
         { id:3, t:10.86, nx:-0.25, ny:2.75 },
         { id:4, t:16.08, nx:0.15,  ny:2.60 },
         { id:5, t:21.50, nx:0.20,  ny:2.75 },
         { id:6, t:28.03, nx:-0.90, ny:1.75 },
-        { id:7, t:34.20, nx:-0.70, ny:3.00 },
+        { id:7, t:34.20, nx:-0.75, ny:3.00 },
         { id:8, t:41.84, nx:-0.90, ny:2.25 }
     ];
-
-    function toPx(nx, ny) {
-        const x = ((nx + 1.5) / 3.0) * 160;
-        const y = 200 - (((ny - 1.0) / 3.0) * 200);
-        return { x, y };
-    }
 
     let activeId = null;
 
     video.addEventListener('timeupdate', () => {
-        const now = video.currentTime;
-        const active = [...PITCHES].reverse().find(p => now >= p.t);
-
-        if (active) {
-            // NEW PITCH DETECTED: Reset UI for next attempt
-            if (activeId !== active.id) {
-                sDot.style.display = "none";
-                outcome.innerText = "";
-                document.getElementById('v-exit').innerText = "-";
-                document.getElementById('v-ang').innerText = "-";
-                document.getElementById('v-dist').innerText = "-";
-                activeId = active.id;
-            }
-            const px = toPx(active.nx, active.ny);
-            pDot.style.left = px.x + 'px'; pDot.style.top = px.y + 'px';
-            pDot.style.opacity = "1";
+        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
+        if (active && activeId !== active.id) {
+            // NEW PITCH: WIPE RESULTS
+            activeId = active.id;
+            document.getElementById('s-dot').style.display = "none";
+            document.getElementById('outcome').innerText = "";
+            document.getElementById('hit-line').style.width = "0";
+            document.querySelectorAll('.stat span').forEach(s => s.innerText = "-");
+            
+            // Show White Dot
+            const px = ((active.nx + 1.5) / 3.0) * 160;
+            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
+            const pd = document.getElementById('p-dot');
+            pd.style.left = px + 'px'; pd.style.top = py + 'px'; pd.style.opacity = "1";
         }
     });
 
@@ -112,32 +117,30 @@
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
-        const px = toPx(active.nx, active.ny);
+        const px = ((active.nx + 1.5) / 3.0) * 160;
+        const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
 
-        sDot.style.left = ux + 'px'; sDot.style.top = uy + 'px';
-        sDot.style.display = 'block';
+        const sd = document.getElementById('s-dot');
+        sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
 
-        // Physics: 75mph bat speed + center-point offset
-        const yDiff = px.y - uy; 
-        const angle = Math.round(yDiff * 2.1);
-        const exitVelo = Math.round((75 * 1.25) + (92 * 0.15) - (Math.abs(yDiff) * 0.4));
-        
-        // Results triggered by tap
-        if (Math.abs(yDiff) < 30) {
-            const dist = Math.round((exitVelo ** 2 / 31) * (1 + angle/45));
-            document.getElementById('v-ang').innerText = angle + "°";
-            document.getElementById('v-exit').innerText = exitVelo + " MPH";
-            document.getElementById('v-dist').innerText = Math.max(0, dist) + " FT";
+        // Physics
+        const yDiff = py - uy;
+        const angle = Math.round(yDiff * 2.2);
+        const exit = Math.round(94 + (yDiff * 0.2)); 
+        const dist = Math.round((exit ** 2 / 31) * (1 + angle/50));
+
+        if (Math.abs(yDiff) < 35) {
+            document.getElementById('s-exit').innerText = exit + " MPH";
+            document.getElementById('s-ang').innerText = angle + "°";
+            document.getElementById('s-dist').innerText = Math.max(0, dist) + " FT";
+            document.getElementById('outcome').innerText = dist > 380 ? "HOME RUN" : "IN PLAY";
             
-            if (dist > 390 && angle > 18) {
-                outcome.innerText = "HOME RUN"; outcome.style.color = "#00ffcc";
-            } else if (angle < 0) {
-                outcome.innerText = "GROUNDER"; outcome.style.color = "#fff";
-            } else {
-                outcome.innerText = "FLY BALL"; outcome.style.color = "#fff";
-            }
+            // Visualizer Line
+            const line = document.getElementById('hit-line');
+            line.style.width = Math.min(dist/4, 100) + "%";
+            line.style.transform = `rotate(${Math.max(-10, -angle)}deg)`;
         } else {
-            outcome.innerText = "WHIFF"; outcome.style.color = "#ff4d4d";
+            document.getElementById('outcome').innerText = "WHIFF";
         }
     });
 </script>
