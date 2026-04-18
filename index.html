@@ -1,70 +1,163 @@
-<script>
-    // ... (Keep existing PITCHES array with your 00:00.92, etc.)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MLB Statcast MVP</title>
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        #v-sec { width: 100%; position: relative; background: #111; min-height: 30vh; }
+        video { width: 100%; display: block; object-fit: contain; max-height: 48vh; }
 
-    document.getElementById('tap').addEventListener('touchstart', (e) => {
+        #broadcast-bar { background: #111; border-top: 2px solid #333; border-bottom: 2px solid #333; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .score-box b { color: #00ffcc; font-size: 1.2rem; }
+        #count-ui { font-family: monospace; font-size: 1.4rem; font-weight: 900; letter-spacing: 2px; }
+        
+        .out-dots { display: flex; gap: 4px; align-items: center; font-size: 0.7rem; color: #777; }
+        .out-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #444; background: #222; }
+        .out-dot.filled { background: #ff4d4d; box-shadow: 0 0 5px #ff4d4d; border-color: #fff; }
+
+        .diamond { display: grid; grid-template-columns: repeat(2, 14px); gap: 6px; transform: rotate(45deg); }
+        .base { width: 12px; height: 12px; border: 1px solid #444; background: #222; }
+        .base.on { background: #f1c40f; border-color: #fff; box-shadow: 0 0 8px #f1c40f; }
+
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 15px; gap: 15px; }
+        #timing-ui { font-size: 0.9rem; font-weight: 900; min-height: 1.2rem; }
+        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; line-height: 1; }
+        .stat { font-size: 0.75rem; color: #666; font-family: monospace; }
+        .stat b { color: #fff; }
+
+        #field { position: relative; width: 80px; height: 80px; background: #0a0a0a; border-radius: 0 100% 0 0; transform: rotate(-45deg); border-left: 2px solid #333; border-bottom: 2px solid #333; overflow: hidden; margin-top: 10px; }
+        #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s; }
+
+        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.02); border: 1px solid #222; }
+        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.5); pointer-events: none; }
+        .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #p-dot { width: 16px; height: 16px; background: white; opacity: 0; z-index: 5; }
+        #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #tap-zone { position: absolute; width: 100%; height: 100%; z-index: 10; touch-action: none; }
+    </style>
+</head>
+<body>
+
+<div id="v-sec" onclick="document.getElementById('v').play()">
+    <video id="v" autoplay muted loop playsinline>
+        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+    </video>
+</div>
+
+<div id="broadcast-bar">
+    <div>RUNS <b id="run-val">0</b> &nbsp;&nbsp; <span id="count-ui">0-0</span></div>
+    <div class="out-dots">OUTS <div class="out-dot" id="o1"></div> <div class="out-dot" id="o2"></div></div>
+    <div class="diamond">
+        <div class="base" id="b2"></div><div class="base" id="b1"></div>
+        <div class="base" id="b3"></div><div class="base" style="opacity:0"></div>
+    </div>
+</div>
+
+<div id="dashboard">
+    <div id="reports">
+        <div id="timing-ui"></div>
+        <h1 id="outcome">READY</h1>
+        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; DIST: <b id="v-di">-</b></div>
+        <div id="field"><div id="hit-line"></div></div>
+    </div>
+    <div id="nestico-box">
+        <div id="tap-zone"></div>
+        <div id="strike-zone"></div>
+        <div id="p-dot" class="dot"></div>
+        <div id="s-dot" class="dot"></div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('v');
+    const PITCHES = [
+        { id:1, t:0.92, nx:-0.75, ny:3.25, s:true },
+        { id:2, t:6.40, nx:-0.40, ny:3.50, s:true },
+        { id:3, t:10.86, nx:-0.25, ny:2.75, s:true },
+        { id:4, t:16.08, nx:0.15, ny:2.60, s:true },
+        { id:5, t:21.50, nx:0.20, ny:2.75, s:true },
+        { id:6, t:28.03, nx:-0.90, ny:1.75, s:false },
+        { id:7, t:36.17, nx:-0.75, ny:3.00, s:true },
+        { id:8, t:41.84, nx:-0.90, ny:2.25, s:false }
+    ];
+
+    let g = { runs:0, b:0, s:0, o:0, activeId:null, swung:false };
+
+    function updateUI() {
+        if (g.s >= 3) { g.o++; g.s=0; g.b=0; }
+        if (g.b >= 4) { document.getElementById('b1').classList.add('on'); g.b=0; g.s=0; }
+        if (g.o >= 3) { g.o=0; resetInning(); }
+        document.getElementById('count-ui').innerText = `${g.b}-${g.s}`;
+        document.getElementById('o1').className = g.o >= 1 ? 'out-dot filled' : 'out-dot';
+        document.getElementById('o2').className = g.o >= 2 ? 'out-dot filled' : 'out-dot';
+        document.getElementById('run-val').innerText = g.runs;
+    }
+
+    function resetInning() {
+        document.querySelectorAll('.base').forEach(b => b.classList.remove('on'));
+        document.getElementById('outcome').innerText = "INNING OVER";
+    }
+
+    video.addEventListener('timeupdate', () => {
+        const now = video.currentTime;
+        const active = [...PITCHES].reverse().find(p => now >= p.t);
+        if (active && g.activeId !== active.id) {
+            if (g.activeId !== null && !g.swung) {
+                const prev = PITCHES.find(p => p.id === g.activeId);
+                prev.s ? g.s++ : g.b++;
+                updateUI();
+            }
+            g.activeId = active.id; g.swung = false;
+            document.getElementById('s-dot').style.display = "none";
+            const px = ((active.nx + 1.5) / 3.0) * 160;
+            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
+            const pd = document.getElementById('p-dot');
+            pd.style.left = px+'px'; pd.style.top = py+'px'; pd.style.opacity = "1";
+        }
+    });
+
+    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
         e.preventDefault();
         const now = video.currentTime;
-        
-        // 1. ENSURE VISUAL FEEDBACK TRIGGERS NO MATTER WHAT
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
         const sd = document.getElementById('s-dot');
         sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
 
-        // 2. CHECK FOR PROXIMITY TO ANY PITCH
-        // We look for any pitch within a 0.8s window of the current video time
         const active = PITCHES.find(p => Math.abs(now - p.t) < 0.8);
-        
-        if (active && !game.swung) {
-            game.swung = true; // Prevents double-swinging at one pitch
-            
+        if (active && !g.swung) {
+            g.swung = true;
             const tDiff = now - active.t;
             const px = ((active.nx + 1.5) / 3.0) * 160;
             const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
-            const yDiff = py - uy; // Distance from center of ball
+            const yDiff = py - uy;
 
-            // TIMING LABELS
             const tUI = document.getElementById('timing-ui');
-            if (Math.abs(tDiff) < 0.06) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
+            if (Math.abs(tDiff) < 0.05) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
             else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
             else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
 
-            // 3. CONTACT PHYSICS (The Show Logic)
-            // Must be within 0.3s of arrival and within 40px of the ball height
-            if (Math.abs(tDiff) < 0.30 && Math.abs(yDiff) < 40) {
-                game.s = 0; game.b = 0; // Reset count on contact
-                
+            if (Math.abs(tDiff) < 0.35 && Math.abs(yDiff) < 40) {
                 const exit = Math.round(110 - (Math.abs(tDiff) * 80) - (Math.abs(yDiff) * 0.5));
                 const angle = Math.round(yDiff * 2.5);
                 const dist = Math.round((exit ** 2 / 29) * (1 + angle/45));
-
-                if (dist > 385) {
-                    document.getElementById('outcome').innerText = "HOME RUN";
-                    game.runs++;
-                } else if (Math.abs(yDiff) > 25 || Math.abs(tDiff) > 0.2) {
-                    document.getElementById('outcome').innerText = "FLY OUT";
-                    game.outs++;
-                } else {
-                    document.getElementById('outcome').innerText = "SINGLE";
-                    document.getElementById('b1').classList.add('on');
-                }
-
+                if (dist > 385) { g.runs++; document.getElementById('outcome').innerText = "HOME RUN"; }
+                else if (Math.abs(yDiff) > 28) { g.o++; document.getElementById('outcome').innerText = "OUT"; }
+                else { document.getElementById('b1').classList.add('on'); document.getElementById('outcome').innerText = "HIT"; }
+                g.s=0; g.b=0;
                 document.getElementById('v-ex').innerText = exit + " MPH";
                 document.getElementById('v-di').innerText = Math.max(0, dist) + " FT";
                 const hl = document.getElementById('hit-line');
                 hl.style.width = Math.min(dist/4, 100) + "%";
                 hl.style.transform = `rotate(${-angle}deg)`;
-            } else {
-                document.getElementById('outcome').innerText = "WHIFF";
-                game.s++;
-            }
-        } else {
-            // 4. SWUNG AT NOTHING / RE-SWING
-            document.getElementById('outcome').innerText = "TOO EARLY";
-            game.s++;
-        }
-        
-        updateUI(); // Refresh the scoreboard
+            } else { g.s++; document.getElementById('outcome').innerText = "WHIFF"; }
+        } else { g.s++; document.getElementById('outcome').innerText = "TOO EARLY"; }
+        updateUI();
     });
 </script>
+</body>
+</html>
