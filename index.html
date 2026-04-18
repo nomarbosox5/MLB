@@ -3,112 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cronin Baseball Statcast</title>
+    <title>Cronin Statcast Pro</title>
     <style>
-        :root { --gold: #f1c40f; --glass: rgba(255, 255, 255, 0.1); --red: #e74c3c; }
+        :root { --gold: #f1c40f; --glass: rgba(255, 255, 255, 0.1); --red: #ff4757; }
         body { 
-            margin: 0; background: #000; color: #fff; font-family: -apple-system, sans-serif; 
+            margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
         }
         
-        /* Header */
         header { 
-            height: 40px; background: #111; display: flex; align-items: center; 
-            justify-content: center; font-weight: 900; letter-spacing: 2px;
-            border-bottom: 1px solid #333; color: var(--gold); font-size: 14px;
-            padding-top: env(safe-area-inset-top);
+            height: 44px; background: linear-gradient(to bottom, #111, #000); 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; letter-spacing: 3px; border-bottom: 1px solid #222;
+            color: var(--gold); font-size: 14px; padding-top: env(safe-area-inset-top);
         }
 
-        /* 30% Side Crop & Larger Display */
-        #v-container { 
-            width: 100%; aspect-ratio: 1.2; background: #000; overflow: hidden; position: relative; 
-        }
-        video { 
-            width: 160%; height: 100%; object-fit: cover; margin-left: -30%; 
-        }
+        /* Extreme Side Crop (70% total width visible) */
+        #v-frame { width: 100%; aspect-ratio: 1.1; overflow: hidden; position: relative; background: #000; }
+        video { width: 170%; height: 100%; object-fit: cover; margin-left: -35%; }
 
-        #ui-grid { 
-            flex-grow: 1; display: grid; grid-template-columns: 1.2fr 0.8fr; 
-            background: #050505; padding: 10px; gap: 8px;
+        #ui-layer { 
+            flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; 
+            background: #050505; padding: 12px; gap: 10px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Diamond Overlay */
-        #diamond-box {
-            height: 100px; background: #142b14; border-radius: 8px; position: relative;
+        /* Field Card - Minimalist Spray */
+        #field-card {
+            height: 110px; background: #1a331a; border-radius: 12px; position: relative;
             border: 1px solid #222; overflow: hidden;
+            background-image: radial-gradient(circle at 50% 90%, #2e7d32 0%, #112a13 100%);
         }
-        .base { 
-            position: absolute; width: 12px; height: 12px; background: #333; 
-            transform: rotate(45deg); border: 1px solid #555; transition: 0.3s;
+        #p-line {
+            position: absolute; bottom: 10%; left: 50%; width: 4px; 
+            background: var(--gold); transform-origin: bottom center; opacity: 0;
+            box-shadow: 0 0 10px var(--gold); z-index: 5;
         }
-        .active-runner { background: var(--gold) !important; box-shadow: 0 0 8px var(--gold); }
-        #b1 { bottom: 45%; right: 20%; }
-        #b2 { top: 20%; left: 47%; }
-        #b3 { bottom: 45%; left: 20%; }
-        #home { bottom: 10%; left: 47%; background: #fff; transform: rotate(45deg); }
 
-        /* Stats & Out Tracker */
-        .card { background: var(--glass); padding: 6px; border-radius: 4px; margin-bottom: 5px; }
-        .row { display: flex; justify-content: space-between; align-items: center; }
-        .label { font-size: 9px; color: #aaa; text-transform: uppercase; }
-        .val { font-size: 14px; font-weight: 900; }
-        .outs { display: flex; gap: 4px; }
-        .out-dot { width: 10px; height: 10px; border-radius: 50%; background: #222; }
+        /* Diamond UI */
+        .diamond-mini { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; }
+        .base { position: absolute; width: 8px; height: 8px; background: #333; transform: rotate(45deg); border: 1px solid #555; }
+        .active { background: var(--gold) !important; box-shadow: 0 0 5px var(--gold); }
+        #b1 { top: 15px; right: 0; } #b2 { top: 0; left: 15px; } #b3 { top: 15px; left: 0; }
+
+        /* Scoring Cards */
+        .card { background: var(--glass); padding: 8px; border-radius: 8px; border-left: 3px solid var(--gold); margin-bottom: 8px; }
+        .label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .val { font-size: 16px; font-weight: 900; }
+        .out-dots { display: flex; gap: 5px; margin-top: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; }
         .out-on { background: var(--red); box-shadow: 0 0 5px var(--red); }
 
-        /* Interaction Zone */
+        /* Strike Zone */
+        #sz-container { display: flex; justify-content: center; align-items: center; }
         #sz { 
-            width: 130px; height: 170px; border: 2px solid rgba(255,255,255,0.3); 
-            position: relative; background: rgba(255,255,255,0.02); touch-action: none;
-            margin: auto;
+            width: 135px; height: 180px; border: 1px solid rgba(255,255,255,0.2); 
+            position: relative; background: rgba(255,255,255,0.01); touch-action: none;
         }
-        .ball { position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 30; box-shadow: 0 0 15px #fff; }
-        .bat { position: absolute; width: 40px; height: 40px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 20; }
-        #spray-line { position: absolute; bottom: 10%; left: 50%; width: 3px; background: var(--gold); transform-origin: bottom center; opacity: 0; }
+        .grid-line { position: absolute; background: rgba(255,255,255,0.08); pointer-events: none; }
+
+        /* Physics Visuals */
+        .ball-hit { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 30; box-shadow: 0 0 15px #fff; }
+        .bat-ring { position: absolute; width: 44px; height: 44px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); z-index: 20; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
 <header>CRONIN BASEBALL</header>
 
-<div id="v-container">
+<div id="v-frame">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
-<div id="ui-grid">
-    <div id="left-col">
+<div id="ui-layer">
+    <div id="left-side">
         <div class="card">
-            <div class="row">
+            <div style="display:flex; justify-content:space-between">
                 <div><div class="label">Runs</div><div id="runs" class="val">0</div></div>
-                <div><div class="label">Outs</div><div id="out-dots" class="outs"></div></div>
+                <div><div class="label">Outs</div><div id="o-dots" class="out-dots"></div></div>
             </div>
         </div>
         
-        <div id="diamond-box">
-            <div id="b1" class="base"></div>
-            <div id="b2" class="base"></div>
-            <div id="b3" class="base"></div>
-            <div id="home" class="base"></div>
-            <div id="spray-line"></div>
+        <div id="field-card">
+            <div id="p-line"></div>
+            <div class="diamond-mini">
+                <div id="b1" class="base"></div>
+                <div id="b2" class="base"></div>
+                <div id="b3" class="base"></div>
+            </div>
+            <div style="position:absolute; bottom:8%; left:50%; transform:translateX(-50%); width:10px; height:10px; background:#fff; clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);"></div>
         </div>
 
-        <div class="card" id="fb" style="opacity:0; margin-top:5px;">
-            <div class="label" id="res-txt">SINGLE</div>
-            <div class="val" id="dist-txt" style="color:var(--gold)">0 FT</div>
+        <div class="card" id="statcast" style="opacity:0; margin-top:8px;">
+            <div class="label" id="timing">PERFECT</div>
+            <div class="val" id="result">SQUARED UP</div>
+            <div class="val" id="metrics" style="color:var(--gold); font-size:12px;">106 MPH / 381 FT</div>
         </div>
     </div>
 
-    <div id="right-col">
-        <div id="sz"></div>
+    <div id="sz-container">
+        <div id="sz">
+            <div class="grid-line" style="width:1px; height:100%; left:33%"></div>
+            <div class="grid-line" style="width:1px; height:100%; left:66%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:33%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:66%"></div>
+        </div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
     const sz = document.getElementById('sz');
-    const fb = document.getElementById('fb');
-    const sLine = document.getElementById('spray-line');
+    const sc = document.getElementById('statcast');
+    const pLine = document.getElementById('p-line');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -118,106 +125,103 @@
     ];
 
     let game = { runs: 0, outs: 0, bases: [false, false, false] };
-    let swingLocked = false;
-    let lastIdx = -1;
+    let swingBusy = false;
+    let lastP = -1;
 
-    function updateGameUI() {
+    function refreshUI() {
         document.getElementById('runs').innerText = game.runs;
-        const oEl = document.getElementById('out-dots'); oEl.innerHTML = '';
-        for(let i=0; i<3; i++) oEl.innerHTML += `<div class="out-dot ${i < game.outs ? 'out-on' : ''}"></div>`;
+        const dots = document.getElementById('o-dots'); dots.innerHTML = '';
+        for(let i=0; i<3; i++) dots.innerHTML += `<div class="dot ${i < game.outs ? 'out-on' : ''}"></div>`;
         
-        document.getElementById('b1').className = `base ${game.bases[0] ? 'active-runner' : ''}`;
-        document.getElementById('b2').className = `base ${game.bases[1] ? 'active-runner' : ''}`;
-        document.getElementById('b3').className = `base ${game.bases[2] ? 'active-runner' : ''}`;
+        document.getElementById('b1').className = `base ${game.bases[0] ? 'active' : ''}`;
+        document.getElementById('b2').className = `base ${game.bases[1] ? 'active' : ''}`;
+        document.getElementById('b3').className = `base ${game.bases[2] ? 'active' : ''}`;
         
         if (game.outs >= 3) {
-            game = { runs: 0, outs: 0, bases: [false, false, false] };
-            setTimeout(updateGameUI, 1000);
+            setTimeout(() => { game = { runs: 0, outs: 0, bases: [false, false, false] }; refreshUI(); }, 1500);
         }
     }
 
     sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        if(swingLocked) return;
+        if(swingBusy) return;
         const r = sz.getBoundingClientRect();
         const t = e.touches[0];
-        handleSwing(t.clientX - r.left, t.clientY - r.top);
+        doSwing(t.clientX - r.left, t.clientY - r.top);
     });
 
-    function handleSwing(tx, ty) {
-        swingLocked = true;
+    function doSwing(tx, ty) {
+        swingBusy = true;
         const now = v.currentTime;
-        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.6);
+        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.65);
         const p = pitches[pIdx];
 
         sz.innerHTML = '';
-        const bat = document.createElement('div'); bat.className = 'bat';
+        const bat = document.createElement('div'); bat.className = 'bat-ring';
         bat.style.left = tx+'px'; bat.style.top = ty+'px'; sz.appendChild(bat);
 
         if(p) {
-            lastIdx = pIdx;
-            const px = ((p.x + 0.75) / 1.5) * 130;
-            const py = ((1.0 - p.y) / 2.0) * 170;
-            const ball = document.createElement('div'); ball.className = 'ball';
+            lastP = pIdx;
+            const px = ((p.x + 0.75) / 1.5) * 135;
+            const py = ((1.0 - p.y) / 2.0) * 180;
+            const ball = document.createElement('div'); ball.className = 'ball-hit';
             ball.style.left = px+'px'; ball.style.top = py+'px'; sz.appendChild(ball);
 
-            const distSq = Math.pow(tx-px, 2) + Math.pow(ty-py, 2);
-            if(distSq < 900) { // Contact
-                const hitDist = Math.floor(Math.random() * 150) + 250 - (distSq/4);
-                processHit(hitDist, (tx-px)*2);
-            } else { processOut("STRIKEOUT"); }
-        } else { processOut("WHIFF"); }
-        updateGameUI();
+            const dx = tx - px; const dy = ty - py;
+            const err = Math.sqrt(dx*dx + dy*dy);
+
+            if(err < 32) {
+                const velo = Math.floor(118 - (err * 1.5));
+                const dist = Math.floor(velo * 3.7);
+                handleHit(dist, dx, now - p.t);
+            } else { handleOut("WHIFF"); }
+        } else { handleOut("TOO EARLY"); }
+        refreshUI();
     }
 
-    function processHit(d, angle) {
-        fb.style.opacity = 1;
-        sLine.style.opacity = 1;
-        sLine.style.height = (d/5) + 'px';
-        sLine.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-        document.getElementById('dist-txt').innerText = Math.floor(d) + " FT";
+    function handleHit(d, spray, timeDiff) {
+        sc.style.opacity = 1;
+        pLine.style.opacity = 1;
+        pLine.style.height = (d/4) + 'px';
+        pLine.style.transform = `translateX(-50%) rotate(${spray*2.2}deg)`;
+        
+        document.getElementById('timing').innerText = Math.abs(timeDiff) < 0.12 ? "PERFECT" : "GOOD";
+        document.getElementById('metrics').innerText = `${Math.floor(d/3.5 + 80)} MPH / ${d} FT`;
 
-        let basesToMove = 0;
-        if(d >= 350) { basesToMove = 3; document.getElementById('res-txt').innerText = "TRIPLE"; }
-        else if(d >= 300) { basesToMove = 2; document.getElementById('res-txt').innerText = "DOUBLE"; }
-        else if(d >= 200) { basesToMove = 1; document.getElementById('res-txt').innerText = "SINGLE"; }
-        else { processOut("FLY OUT"); return; }
+        let m = 0;
+        if(d > 360) { m = 4; document.getElementById('result').innerText = "HOME RUN"; }
+        else if(d > 300) { m = 2; document.getElementById('result').innerText = "DOUBLE"; }
+        else if(d > 200) { m = 1; document.getElementById('result').innerText = "SINGLE"; }
+        else { handleOut("FLY OUT"); return; }
 
-        // Advance Runners
-        for (let i = 0; i < basesToMove; i++) {
-            if (game.bases[2]) game.runs++;
+        for(let i=0; i<m; i++) {
+            if(game.bases[2]) game.runs++;
             game.bases[2] = game.bases[1];
             game.bases[1] = game.bases[0];
-            game.bases[0] = (i === 0);
+            game.bases[0] = (i === 0 && m < 4);
         }
     }
 
-    function processOut(msg) {
+    function handleOut(type) {
         game.outs++;
-        fb.style.opacity = 1;
-        document.getElementById('res-txt').innerText = msg;
-        document.getElementById('dist-txt').innerText = "OUT";
+        sc.style.opacity = 1;
+        document.getElementById('timing').innerText = "OUT";
+        document.getElementById('result').innerText = type;
+        document.getElementById('metrics').innerText = "---";
     }
 
+    // Loop logic to clear swing state
     setInterval(() => {
         const now = v.currentTime;
-        if (now < 0.5) { 
-            swingLocked = false; 
-            lastIdx = -1; 
-            fb.style.opacity = 0; 
-            sLine.style.opacity = 0;
-            sz.innerHTML = '';
-        }
-        const incoming = pitches.find(p => p.t > now && p.t - now < 0.8);
-        if(incoming && incoming.t - now < 0.2) {
-            swingLocked = false;
-            fb.style.opacity = 0;
-            sLine.style.opacity = 0;
-            sz.innerHTML = '';
+        if (now < 0.3 || pitches.some(p => p.t > now && p.t - now < 0.5)) {
+            swingBusy = false;
+            sc.style.opacity = 0;
+            pLine.style.opacity = 0;
+            if(now < 0.3) sz.innerHTML = '';
         }
     }, 100);
 
-    updateGameUI();
+    refreshUI();
 </script>
 </body>
 </html>
