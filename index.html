@@ -3,213 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Baseball Tap</title>
+    <title>Baseball Statcast Interface</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Arial Black', sans-serif; overflow: hidden; text-transform: uppercase; }
-        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Arial', sans-serif; overflow: hidden; }
         
-        /* Video Background */
-        video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        /* Grid Layout matching your screenshot */
+        #main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 60vh 40vh;
+            width: 100vw; height: 100vh;
+        }
 
-        /* HUD UI */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-        
-        .scoreboard { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 10px; border-left: 4px solid #f39c12; }
-        .diamond { position: absolute; top: 20px; left: 20px; width: 80px; height: 80px; }
-        
-        /* Swing Feedback Box */
-        #feedback { position: absolute; left: 20px; bottom: 200px; background: rgba(0,0,0,0.85); border: 1px solid #444; padding: 10px; display: none; width: 200px; }
-        .feedback-label { font-size: 10px; color: #aaa; }
-        .feedback-value { font-size: 18px; margin-bottom: 5px; }
-        .hit-speed { color: #f1c40f; }
+        /* Top Section: Full Width Video */
+        #video-section {
+            grid-column: 1 / span 2;
+            position: relative;
+            border-bottom: 2px solid #333;
+            background: #111;
+        }
+        video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Strike Zone Interaction */
-        #strike-zone-canvas { position: absolute; z-index: 5; cursor: crosshair; }
+        /* Bottom Left: Score and Feedback */
+        #feedback-section {
+            background: #050505;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            border-right: 1px solid #333;
+        }
 
-        .count-dots { display: flex; gap: 5px; margin-top: 5px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; }
-        .dot.active-strike { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
-        .dot.active-ball { background: #3498db; }
-        .dot.active-out { background: #e74c3c; }
+        /* Bottom Right: Strike Zone Interaction */
+        #interaction-section {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* UI Elements */
+        .scoreboard { background: #1a1a1a; padding: 10px; width: fit-content; border: 1px solid #444; }
+        .dots { display: flex; gap: 5px; margin: 5px 0; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; border: 1px solid #555; }
+        .active-s { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; }
+        .active-b { background: #3498db; }
+        .active-o { background: #e74c3c; }
+
+        .swing-card { background: #222; border-left: 4px solid #f1c40f; padding: 10px; width: 220px; }
+        .label { font-size: 10px; color: #aaa; letter-spacing: 1px; }
+        .value { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+
+        /* Strike Zone Styling */
+        #strike-zone {
+            width: 180px; height: 240px;
+            border: 2px solid rgba(255,255,255,0.4);
+            position: relative;
+            background: rgba(255,255,255,0.05);
+        }
+        .grid-v { position: absolute; width: 33.33%; height: 100%; border-right: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
+        .grid-h { position: absolute; height: 33.33%; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
+
+        .ball-marker { position: absolute; width: 15px; height: 15px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; }
+        .bat-marker { position: absolute; width: 8px; height: 40px; background: #8d6e63; transform: translate(-50%, -50%) rotate(45deg); z-index: 6; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <video id="pitchVideo" muted playsinline>
-        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-    </video>
+<div id="main-container">
+    <div id="video-section">
+        <video id="v" autoplay muted loop playsinline>
+            <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+        </video>
+    </div>
 
-    <canvas id="strike-zone-canvas"></canvas>
-
-    <div id="ui-layer">
+    <div id="feedback-section">
         <div class="scoreboard">
-            <div>DET <span id="score-det">0</span></div>
-            <div>SD  <span id="score-sd">3</span></div>
-            <hr>
-            <div id="count-display">
-                B <div class="count-dots" id="balls-dots"></div>
-                S <div class="count-dots" id="strikes-dots"></div>
-                O <div class="count-dots" id="outs-dots"></div>
-            </div>
+            <div>B <div class="dots" id="b-row"></div></div>
+            <div>S <div class="dots" id="s-row"></div></div>
+            <div>O <div class="dots" id="o-row"></div></div>
         </div>
+        
+        <div class="swing-card" id="card" style="opacity: 0;">
+            <div class="label">SWING TIMING</div>
+            <div id="v-timing" class="value">GOOD</div>
+            <div class="label">CONTACT RESULT</div>
+            <div id="v-contact" class="value">SQUARED UP</div>
+            <div class="label">HIT SPEED</div>
+            <div id="v-speed" class="value" style="color:#f1c40f">103 MPH</div>
+        </div>
+    </div>
 
-        <div id="feedback">
-            <div class="feedback-label">SWING TIMING</div>
-            <div id="swing-timing" class="feedback-value">---</div>
-            <div class="feedback-label">CONTACT RESULT</div>
-            <div id="contact-result" class="feedback-value">---</div>
-            <div class="feedback-label">HIT SPEED</div>
-            <div id="hit-speed" class="feedback-value hit-speed">0 MPH</div>
+    <div id="interaction-section">
+        <div id="strike-zone">
+            <div class="grid-v" style="left:0"></div><div class="grid-v" style="left:33%"></div>
+            <div class="grid-h" style="top:0"></div><div class="grid-h" style="top:33%"></div>
         </div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('pitchVideo');
-    const canvas = document.getElementById('strike-zone-canvas');
-    const ctx = canvas.getContext('2d');
+    const v = document.getElementById('v');
+    const zone = document.getElementById('strike-zone');
+    const card = document.getElementById('card');
     
-    // Pitch Data
     const pitches = [
-        { t: 0.92, x: -0.75, y: 0.75 },
-        { t: 6.40, x: -0.40, y: 1.00 },
-        { t: 10.86, x: -0.25, y: 0.25 },
-        { t: 16.08, x: 0.15, y: 0.10 },
-        { t: 21.50, x: -0.95, y: -0.75 },
-        { t: 28.03, x: 0.20, y: 0.25 },
-        { t: 36.17, x: -0.95, y: 0.00 },
-        { t: 41.84, x: -0.80, y: 0.25 }
+        { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
+        { t: 10.86, x: -0.25, y: 0.25 }, { t: 16.08, x: 0.15, y: 0.10 },
+        { t: 21.50, x: -0.95, y: -0.75 }, { t: 28.03, x: 0.20, y: 0.25 },
+        { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
-    let gameState = { balls: 0, strikes: 0, outs: 0, score: 3 };
-    let canSwing = true;
+    let state = { b:0, s:0, o:0 };
 
-    // Strike Zone Mapping (Normalized -1 to 1)
-    function setupCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-
-    function drawZone() {
-        ctx.clearRect(0,0, canvas.width, canvas.height);
-        const w = 200; const h = 280;
-        const cx = canvas.width / 2; const cy = canvas.height / 2 + 50;
-        
-        ctx.strokeStyle = "rgba(255,255,255,0.5)";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(cx - w/2, cy - h/2, w, h);
-        
-        // Draw Grid
-        ctx.beginPath();
-        ctx.moveTo(cx - w/6, cy - h/2); ctx.lineTo(cx - w/6, cy + h/2);
-        ctx.moveTo(cx + w/6, cy - h/2); ctx.lineTo(cx + w/6, cy + h/2);
-        ctx.moveTo(cx - w/2, cy - h/6); ctx.lineTo(cx + w/2, cy - h/6);
-        ctx.moveTo(cx - w/2, cy + h/6); ctx.lineTo(cx + w/2, cy + h/6);
-        ctx.stroke();
-    }
-
-    window.addEventListener('resize', setupCanvas);
-    setupCanvas();
-    drawZone();
-
-    // Game Logic
-    canvas.addEventListener('mousedown', (e) => {
-        if (!canSwing) return;
-        
-        const currentTime = video.currentTime;
-        const activePitch = pitches.find(p => Math.abs(currentTime - p.t) < 0.5);
-
-        if (activePitch) {
-            processSwing(e, activePitch);
-        } else {
-            updateCount('strike'); // Swung at nothing
+    function renderDots() {
+        const make = (id, count, max, cls) => {
+            const el = document.getElementById(id); el.innerHTML = '';
+            for(let i=0; i<max; i++) el.innerHTML += `<div class="dot ${i<count?cls:''}"></div>`;
         }
+        make('b-row', state.b, 3, 'active-b');
+        make('s-row', state.s, 2, 'active-s');
+        make('o-row', state.o, 2, 'active-o');
+    }
+
+    zone.addEventListener('click', (e) => {
+        const r = zone.getBoundingClientRect();
+        const tx = e.clientX - r.left;
+        const ty = e.clientY - r.top;
+        
+        const now = v.currentTime;
+        const p = pitches.find(p => Math.abs(now - p.t) < 0.7);
+
+        // Visual bat
+        const b = document.createElement('div'); b.className = 'bat-marker';
+        b.style.left = tx+'px'; b.style.top = ty+'px'; zone.appendChild(b);
+
+        if(p) {
+            // Map p.x (-0.75 to 0.75) to 0 to 180px
+            const px = ((p.x + 0.75) / 1.5) * 180;
+            const py = ((1.0 - p.y) / 2.0) * 240;
+
+            const ball = document.createElement('div'); ball.className = 'ball-marker';
+            ball.style.left = px+'px'; ball.style.top = py+'px'; zone.appendChild(ball);
+
+            const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
+            const speed = Math.max(0, 75 + 30 - (d/2));
+            
+            card.style.opacity = 1;
+            document.getElementById('v-speed').innerText = Math.floor(speed) + " MPH";
+            document.getElementById('v-contact').innerText = d < 30 ? "SQUARED UP" : "WEAK";
+            
+            if(speed < 90) { state.s++; } else { state.s = 0; state.b = 0; }
+        } else {
+            state.s++;
+            card.style.opacity = 1;
+            document.getElementById('v-contact').innerText = "WHIFF";
+            document.getElementById('v-speed').innerText = "0 MPH";
+        }
+
+        if(state.s >= 3) { state.s=0; state.o++; }
+        renderDots();
     });
 
-    function processSwing(e, pitch) {
-        const rect = canvas.getBoundingClientRect();
-        const tapX = ((e.clientX - rect.left) / canvas.width * 2) - 1;
-        const tapY = -(((e.clientY - rect.top) / canvas.height * 2) - 1);
-
-        // Calculate distance from pitch center
-        const dist = Math.sqrt(Math.pow(tapX - pitch.x, 2) + Math.pow(tapY - pitch.y, 2));
-        
-        let timing = "GOOD";
-        let result = "SQUARED UP";
-        let speed = Math.floor(100 + Math.random() * 10);
-
-        if (dist < 0.15) {
-            showFeedback("PERFECT", "SQUARED UP", speed + " MPH");
-            resetPlateCount(); // Base hit
-        } else if (dist < 0.4) {
-            showFeedback("GOOD", "SOLID CONTACT", (speed - 15) + " MPH");
-            updateCount('strike'); // Foul ball/Out logic
-        } else {
-            showFeedback("TOO LATE", "WHIFF", "0 MPH");
-            updateCount('strike');
+    // Auto-clear logic: 1 second before next pitch
+    setInterval(() => {
+        const next = pitches.find(p => p.t > v.currentTime && p.t - v.currentTime < 1.0);
+        if(next) {
+            zone.querySelectorAll('.ball-marker, .bat-marker').forEach(m => m.remove());
+            card.style.opacity = 0;
         }
-    }
+    }, 100);
 
-    function updateCount(type) {
-        if (type === 'strike') gameState.strikes++;
-        if (type === 'ball') gameState.balls++;
-
-        if (gameState.strikes >= 3) {
-            gameState.outs++;
-            resetPlateCount();
-        }
-        if (gameState.balls >= 4) {
-            resetPlateCount(); // Walk
-        }
-        if (gameState.outs >= 3) {
-            gameState.outs = 0;
-        }
-        renderUI();
-    }
-
-    function resetPlateCount() {
-        gameState.strikes = 0;
-        gameState.balls = 0;
-        renderUI();
-    }
-
-    function showFeedback(timing, result, speed) {
-        document.getElementById('feedback').style.display = 'block';
-        document.getElementById('swing-timing').innerText = timing;
-        document.getElementById('contact-result').innerText = result;
-        document.getElementById('hit-speed').innerText = speed;
-        
-        setTimeout(() => {
-            document.getElementById('feedback').style.display = 'none';
-        }, 2000);
-    }
-
-    function renderUI() {
-        const drawDots = (id, count, max, cssClass) => {
-            const el = document.getElementById(id);
-            el.innerHTML = '';
-            for(let i=0; i<max; i++) {
-                let dot = document.createElement('div');
-                dot.className = `dot ${i < count ? cssClass : ''}`;
-                el.appendChild(dot);
-            }
-        };
-
-        drawDots('balls-dots', gameState.balls, 3, 'active-ball');
-        drawDots('strikes-dots', gameState.strikes, 2, 'active-strike');
-        drawDots('outs-dots', gameState.outs, 2, 'active-out');
-    }
-
-    video.addEventListener('ended', () => {
-        video.currentTime = 0;
-        video.play();
-    });
-
-    // Start
-    renderUI();
-    video.play();
-
+    renderDots();
 </script>
 </body>
 </html>
