@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Pro - Perfect Sync</title>
+    <title>MLB Pro - Physics Sync</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         #video-section { width: 100%; background: #000; flex-shrink: 0; border-bottom: 2px solid #222; }
-        video { width: 100%; max-height: 45vh; display: block; }
+        video { width: 100%; max-height: 42vh; display: block; }
 
-        #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 30px; padding: 20px; }
-        #results-area { width: 160px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; }
-        #outcome { font-size: 2.4rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; line-height: 1; }
-        #timing-fb { font-size: 1rem; color: #666; text-transform: uppercase; margin-top: 8px; font-weight: bold; }
+        #dashboard { flex-grow: 1; display: flex; align-items: center; justify-content: space-around; padding: 15px; }
+        #results-area { width: 180px; display: flex; flex-direction: column; gap: 4px; }
+        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
+        .stat-line { font-size: 0.85rem; font-family: monospace; color: #aaa; }
+        .stat-line span { color: #fff; font-weight: bold; }
 
-        /* The Strike Zone + Gutter Allowance */
-        #statcast-container { position: relative; width: 150px; height: 200px; }
+        #statcast-container { position: relative; width: 160px; height: 200px; }
         #strike-zone { 
-            position: absolute; left: 20px; top: 30px; width: 110px; height: 140px; 
-            border: 4px solid #fff; background: rgba(255,255,255,0.05); box-sizing: border-box;
+            position: absolute; left: 25px; top: 30px; width: 110px; height: 140px; 
+            border: 3px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.05);
         }
 
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #pitch-dot { width: 22px; height: 22px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
-        #swing-dot { width: 34px; height: 34px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
+        #pitch-dot { width: 18px; height: 18px; background: white; opacity: 0; box-shadow: 0 0 15px #fff; z-index: 5; }
+        #swing-dot { width: 28px; height: 28px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
         #tap-zone { position: absolute; width: 100%; height: 100%; z-index: 10; }
     </style>
 </head>
@@ -38,7 +38,9 @@
     <div id="dashboard">
         <div id="results-area">
             <h1 id="outcome"></h1>
-            <div id="timing-fb"></div>
+            <div class="stat-line">DIST: <span id="s-dist">-</span></div>
+            <div class="stat-line">ANGLE: <span id="s-angle">-</span></div>
+            <div class="stat-line">EXIT: <span id="s-exit">-</span></div>
         </div>
 
         <div id="statcast-container">
@@ -52,76 +54,77 @@
 <script>
     const video = document.getElementById('v');
     const outcome = document.getElementById('outcome');
-    const timingFb = document.getElementById('timing-fb');
     const pDot = document.getElementById('pitch-dot');
     const sDot = document.getElementById('swing-dot');
 
-    // PERFECT COORDINATES (Mapped to 150x200 container)
-    const PITCH_DATA = [
-        { id: 1, t: 0.92,  x: 35,  y: 165, res: "HOME RUN" },
-        { id: 2, t: 6.40,  x: 125, y: 45,  res: "FLY OUT"  },
-        { id: 3, t: 10.86, x: 75,  y: 100, res: "SINGLE"   },
-        { id: 4, t: 16.08, x: 85,  y: 55,  res: "POP UP"   },
-        { id: 5, t: 21.50, x: 115, y: 120, res: "GROUNDER" },
-        { id: 6, t: 28.03, x: 10,  y: 140, res: "BALL" }, // Outside the white box
-        { id: 7, t: 33.00, x: 45,  y: 110, res: "DOUBLE"   },
-        { id: 8, t: 36.17, x: 10,  y: 125, res: "BALL" }  // Outside the white box
+    const PITCHES = [
+        { id:1, t:0.95, nx:-0.75, ny:3.25 },
+        { id:2, t:6.40, nx:-0.40, ny:3.50 },
+        { id:3, t:10.86, nx:-0.25, ny:2.75 },
+        { id:4, t:16.08, nx:0.15, ny:2.60 },
+        { id:5, t:21.50, nx:0.20, ny:2.75 },
+        { id:6, t:28.03, nx:-0.90, ny:1.75 },
+        { id:7, t:33.00, nx:-0.75, ny:3.00 },
+        { id:8, t:36.17, nx:-0.90, ny:2.25 }
     ];
 
-    let currentActiveId = null;
+    function toPx(nx, ny) {
+        const x = ((nx + 1.5) / 3.0) * 160;
+        const y = 200 - (((ny - 1.0) / 3.0) * 200);
+        return { x, y };
+    }
+
+    let currentId = null;
 
     video.addEventListener('timeupdate', () => {
-        const now = video.currentTime;
-        
-        // Find the "current" pitch based on time
-        const active = [...PITCH_DATA].reverse().find(p => now >= p.t);
-
+        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
         if (active) {
-            // New Pitch Reset
-            if (currentActiveId !== active.id) {
+            if (currentId !== active.id) {
                 sDot.style.display = "none";
                 outcome.innerText = "";
-                timingFb.innerText = "";
-                currentActiveId = active.id;
+                document.getElementById('s-dist').innerText = "-";
+                document.getElementById('s-angle').innerText = "-";
+                document.getElementById('s-exit').innerText = "-";
+                currentId = active.id;
             }
-            
-            pDot.style.left = active.x + 'px';
-            pDot.style.top = active.y + 'px';
+            const px = toPx(active.nx, active.ny);
+            pDot.style.left = px.x + 'px'; pDot.style.top = px.y + 'px';
             pDot.style.opacity = "1";
-        } else {
-            pDot.style.opacity = "0";
-            if (now < 0.2) {
-                sDot.style.display = "none";
-                outcome.innerText = "";
-                currentActiveId = null;
-            }
         }
     });
 
     document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const active = [...PITCH_DATA].reverse().find(p => video.currentTime >= p.t);
+        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
         if (!active) return;
 
         const rect = document.getElementById('statcast-container').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
+        const px = toPx(active.nx, active.ny);
 
-        sDot.style.left = ux + 'px';
-        sDot.style.top = uy + 'px';
+        sDot.style.left = ux + 'px'; sDot.style.top = uy + 'px';
         sDot.style.display = 'block';
 
-        // Timing Calculation (Impact window)
-        const diff = Math.abs(video.currentTime - active.t);
+        // Physics Logic (75mph bat speed baseline)
+        const v_pitch = 90; 
+        const v_bat = 75;
+        const offset = uy - px.y; // Vertical offset determines angle
         
-        if (diff < 0.45) {
-            outcome.innerText = active.res;
-            outcome.style.color = "#00ffcc";
-            timingFb.innerText = diff < 0.15 ? "PERFECT" : "GOOD";
+        const launchAngle = Math.round(offset * -2.5); // Crude projection
+        const exitVel = Math.round((v_bat * 1.2) + (v_pitch * 0.2) - Math.abs(offset));
+        const distance = Math.round(exitVel * 2.5 * (1 + (launchAngle/100)));
+
+        document.getElementById('s-angle').innerText = launchAngle + "°";
+        document.getElementById('s-exit').innerText = exitVel + " MPH";
+        document.getElementById('s-dist').innerText = Math.max(0, distance) + " FT";
+
+        if (distance > 350 && Math.abs(offset) < 15) {
+            outcome.innerText = "HOME RUN"; outcome.style.color = "#00ffcc";
+        } else if (Math.abs(offset) > 25) {
+            outcome.innerText = "WHIFF"; outcome.style.color = "#ff4d4d";
         } else {
-            outcome.innerText = "LATE";
-            outcome.style.color = "#ff4d4d";
-            timingFb.innerText = "MISSED TIMING";
+            outcome.innerText = "IN PLAY"; outcome.style.color = "#fff";
         }
     });
 </script>
