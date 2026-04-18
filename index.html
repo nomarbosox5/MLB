@@ -3,190 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Pro MVP</title>
+    <title>Statcast v7 - Hit Types</title>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Roboto Condensed', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* ZOOMED VIDEO SECTION */
-        #v-sec { 
-            width: 100%; height: 45vh; position: relative; 
-            background: #000; overflow: hidden; /* This crops the 10% overflow */
-        }
-        video { 
-            width: 100%; height: 100%; 
-            object-fit: cover; 
-            transform: scale(1.15); /* Zooms in to make the ball bigger */
-        }
+        #v-layer { width: 100%; height: 42vh; background: #000; position: relative; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); }
 
-        #broadcast-bar { background: #111; border-y: 2px solid #333; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
-        .score-box b { color: #00ffcc; font-size: 1.1rem; }
-        #count-ui { font-family: monospace; font-size: 1.3rem; font-weight: 900; }
-        .out-dots { display: flex; gap: 4px; align-items: center; font-size: 0.7rem; }
-        .out-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #444; background: #222; }
-        .out-dot.filled { background: #ff4d4d; box-shadow: 0 0 5px #ff4d4d; }
+        /* SCORE BUG */
+        #score-bug { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.85); display: flex; align-items: center; padding: 8px 15px; border-radius: 4px; border-left: 5px solid #BD3039; z-index: 50; }
+        .team { font-size: 1.6rem; font-weight: 900; margin-right: 12px; }
         
-        .diamond { display: grid; grid-template-columns: repeat(2, 12px); gap: 5px; transform: rotate(45deg); }
-        .base { width: 10px; height: 10px; border: 1px solid #444; background: #222; }
-        .base.on { background: #f1c40f; box-shadow: 0 0 5px #f1c40f; }
+        /* RESULT POPUP */
+        #result-banner { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; font-weight: 900; font-style: italic; text-transform: uppercase;
+            text-shadow: 0 0 20px #000; pointer-events: none; opacity: 0; z-index: 100;
+        }
 
-        /* DASHBOARD */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 10px; gap: 10px; }
-        #timing-ui { font-size: 0.8rem; font-weight: 900; min-height: 1rem; text-transform: uppercase; }
-        #outcome { font-size: 1.7rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
-        .stat { font-size: 0.7rem; color: #666; font-family: monospace; }
-        .stat b { color: #fff; }
+        /* STATCAST BOXES */
+        #statcast-overlay { position: absolute; inset: 0; background: rgba(0, 30, 70, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 110; }
+        .stat-bubble { background: #efb21e; color: #000; padding: 10px 25px; border-radius: 40px; font-weight: 900; margin: 8px; font-size: 1.4rem; }
+        .stat-bubble span { display: block; font-size: 0.7rem; text-transform: uppercase; color: #222; }
 
-        /* NESTICO ZONE */
-        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.03); border: 1px solid #222; }
-        #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.4); pointer-events: none; }
+        /* BOX AREA */
+        #interaction { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #080808; }
+        #nestico-box { position: relative; width: 180px; height: 230px; border: 1px solid #333; background: rgba(255,255,255,0.02); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #ball-tracker { width: 16px; height: 16px; background: white; opacity: 0; z-index: 5; box-shadow: 0 0 10px #fff; }
-        #swing-dot { width: 24px; height: 24px; background: #ff4d4d; border: 2px solid #fff; display: none; z-index: 6; }
-        #tap-zone { position: absolute; width: 100%; height: 100%; z-index: 10; touch-action: none; }
+        #target { width: 14px; height: 14px; background: #fff; opacity: 0; box-shadow: 0 0 12px #fff; }
+        #swing { width: 28px; height: 28px; border: 2px solid #fff; display: none; background: rgba(255, 59, 48, 0.7); }
     </style>
 </head>
 <body>
 
-<div id="v-sec" onclick="document.getElementById('v').play()">
+<div id="v-layer" onclick="document.getElementById('v').play()">
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
-</div>
+    <div id="score-bug"><div class="team">BOS <span id="r-val">0</span></div></div>
+    <div id="result-banner">HOME RUN</div>
 
-<div id="broadcast-bar">
-    <div>RUNS <b id="run-val">0</b> &nbsp; <span id="count-ui">0-0</span></div>
-    <div class="out-dots">OUTS <div class="out-dot" id="o1"></div> <div class="out-dot" id="o2"></div></div>
-    <div class="diamond">
-        <div class="base" id="b2"></div><div class="base" id="b1"></div><div class="base" id="b3"></div>
+    <div id="statcast-overlay">
+        <h1 style="color:#efb21e; font-style: italic;">STATCAST™</h1>
+        <div class="stat-bubble"><span>Exit Velocity</span><b id="sc-ev">0</b> MPH</div>
+        <div class="stat-bubble"><span>Launch Angle</span><b id="sc-la">0</b>°</div>
+        <div class="stat-bubble"><span>Distance</span><b id="sc-dist">0</b> FT</div>
+        <button onclick="document.getElementById('statcast-overlay').style.display='none'" style="margin-top:20px; padding:10px 30px; font-weight:900;">RESUME</button>
     </div>
 </div>
 
-<div id="dashboard">
-    <div id="reports">
-        <div id="timing-ui"></div>
-        <h1 id="outcome">READY</h1>
-        <div class="stat">EXIT: <b id="v-ex">-</b> &nbsp; DIST: <b id="v-di">-</b></div>
-    </div>
+<div id="interaction">
     <div id="nestico-box">
-        <div id="tap-zone"></div>
-        <div id="strike-zone"></div>
-        <div id="ball-tracker" class="dot"></div>
-        <div id="swing-dot" class="dot"></div>
+        <div id="tap-surface" style="position:absolute; inset:0; z-index:10; touch-action:none;"></div>
+        <div id="target" class="dot"></div>
+        <div id="swing" class="dot"></div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('v');
+    const v = document.getElementById('v');
     const PITCHES = [
-        { id:1, t:0.92,  nx:-0.75, ny:3.25, strike:true },
-        { id:2, t:6.40,  nx:-0.40, ny:3.50, strike:true },
-        { id:3, t:10.86, nx:-0.25, ny:2.75, strike:true },
-        { id:4, t:16.08, nx:0.15,  ny:2.60, strike:true },
-        { id:5, t:21.50, nx:0.20,  ny:2.75, strike:true },
-        { id:6, t:28.03, nx:-0.90, ny:1.75, strike:false },
-        { id:7, t:36.17, nx:-0.75, ny:3.00, strike:true },
-        { id:8, t:41.84, nx:-0.90, ny:2.25, strike:false }
+        {t: 0.92, x: -0.75, y: 3.25}, {t: 6.40, x: -0.40, y: 3.50},
+        {t: 10.86, x: -0.25, y: 2.75}, {t: 16.08, x: 0.15, y: 2.60},
+        {t: 21.50, x: 0.20, y: 2.75}, {t: 28.03, x: -1.20, y: 1.50},
+        {t: 36.17, x: -0.75, y: 3.00}, {t: 41.84, x: -1.10, y: 2.00}
     ];
 
-    let g = { runs:0, b:0, s:0, o:0, activeId:null, swung:false, lastTime:0 };
+    let g = { r:0, lastT:0, activeIdx:-1, swung:false };
 
-    function updateUI() {
-        if (g.s >= 3) { g.o++; g.s=0; g.b=0; }
-        if (g.b >= 4) { document.getElementById('b1').classList.add('on'); g.b=0; g.s=0; }
-        if (g.o >= 3) { resetGame(); }
-        
-        document.getElementById('count-ui').innerText = `${g.b}-${g.s}`;
-        document.getElementById('o1').className = g.o >= 1 ? 'out-dot filled' : 'out-dot';
-        document.getElementById('o2').className = g.o >= 2 ? 'out-dot filled' : 'out-dot';
-        document.getElementById('run-val').innerText = g.runs;
-    }
+    v.addEventListener('timeupdate', () => {
+        const now = v.currentTime;
+        if (now < g.lastT) { g.activeIdx = -1; g.swung = false; document.getElementById('result-banner').style.opacity = '0'; }
+        g.lastT = now;
 
-    function resetGame() {
-        g.b=0; g.s=0; g.o=0; g.runs=0;
-        document.querySelectorAll('.base').forEach(b => b.classList.remove('on'));
-        document.getElementById('outcome').innerText = "RESET";
-    }
+        let idx = -1;
+        PITCHES.forEach((p, i) => { if (now >= p.t) idx = i; });
 
-    video.addEventListener('timeupdate', () => {
-        const now = video.currentTime;
-        
-        // VIDEO RESTART DETECTION
-        if (now < g.lastTime) { resetGame(); g.activeId = null; }
-        g.lastTime = now;
-
-        const active = [...PITCHES].reverse().find(p => now >= p.t);
-        if (active && g.activeId !== active.id) {
-            if (g.activeId !== null && !g.swung) {
-                const prev = PITCHES.find(p => p.id === g.activeId);
-                prev.strike ? g.s++ : g.b++;
-                updateUI();
+        if (idx !== g.activeIdx) {
+            g.activeIdx = idx; g.swung = false;
+            document.getElementById('swing').style.display = 'none';
+            if (idx !== -1) {
+                const p = PITCHES[idx];
+                const px = ((p.x + 1.5) / 3.0) * 180;
+                const py = 230 - (((p.y - 1.0) / 3.0) * 230);
+                const td = document.getElementById('target');
+                td.style.left = px+'px'; td.style.top = py+'px'; td.style.opacity = '1';
             }
-            g.activeId = active.id; g.swung = false;
-            document.getElementById('swing-dot').style.display = "none";
-            
-            // UPDATE BALL TRACKER POSITION
-            const px = ((active.nx + 1.5) / 3.0) * 160;
-            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
-            const tracker = document.getElementById('ball-tracker');
-            tracker.style.left = px+'px'; tracker.style.top = py+'px'; tracker.style.opacity = "1";
         }
     });
 
-    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
+    document.getElementById('tap-surface').addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const now = video.currentTime;
+        if (g.activeIdx === -1 || g.swung) return;
+        g.swung = true;
+
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
         const ux = e.touches[0].clientX - rect.left;
         const uy = e.touches[0].clientY - rect.top;
+        document.getElementById('swing').style.left = ux+'px';
+        document.getElementById('swing').style.top = uy+'px';
+        document.getElementById('swing').style.display = 'block';
+
+        const p = PITCHES[g.activeIdx];
+        const px = ((p.x + 1.5) / 3.0) * 180;
+        const py = 230 - (((p.y - 1.0) / 3.0) * 230);
         
-        const sd = document.getElementById('swing-dot');
-        sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
+        const dX = ux - px;
+        const dY = py - uy; // Under ball = positive LA
+        const distErr = Math.sqrt(dX*dX + dY*dY);
+        const tDiff = Math.abs(v.currentTime - p.t);
 
-        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.7);
-        if (active && !g.swung) {
-            g.swung = true;
-            const tDiff = now - active.t;
-            const px = ((active.nx + 1.5) / 3.0) * 160;
-            const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
-            
-            // STRICT PHYSICS CALC
-            const xDiff = Math.abs(px - ux);
-            const yDiff = Math.abs(py - uy);
-            const totalDist = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+        const banner = document.getElementById('result-banner');
+        banner.style.opacity = '1';
 
-            const tUI = document.getElementById('timing-ui');
-            if (Math.abs(tDiff) < 0.05) { tUI.innerText="PERFECT"; tUI.style.color="#00ffcc"; }
-            else if (tDiff < 0) { tUI.innerText="EARLY"; tUI.style.color="#ffcc00"; }
-            else { tUI.innerText="LATE"; tUI.style.color="#ff4d4d"; }
-
-            // MUST BE WITHIN 35px FOR A HIT
-            if (totalDist < 35 && Math.abs(tDiff) < 0.3) {
-                const exit = Math.round(110 - (Math.abs(tDiff) * 80) - (totalDist * 0.5));
-                const dist = Math.round((exit ** 2 / 29));
-                
-                if (dist > 380 && totalDist < 15 && Math.abs(tDiff) < 0.08) {
-                    document.getElementById('outcome').innerText = "HOME RUN";
-                    g.runs++;
-                } else if (totalDist > 25) {
-                    document.getElementById('outcome').innerText = "FLY OUT";
-                    g.o++;
-                } else {
-                    document.getElementById('outcome').innerText = "SINGLE";
-                    document.getElementById('b1').classList.add('on');
-                }
-                g.s=0; g.b=0;
-                document.getElementById('v-ex').innerText = exit + " MPH";
-                document.getElementById('v-di').innerText = dist + " FT";
-            } else {
-                document.getElementById('outcome').innerText = "WHIFF";
-                g.s++;
-            }
+        // THE PHYSICS ENGINE
+        if (distErr > 45 || tDiff > 0.35) {
+            banner.innerText = "WHIFF"; banner.style.color = "#ff4d4d";
+        } else if (Math.abs(dX) > 25) {
+            banner.innerText = "FOUL BALL"; banner.style.color = "#aaa";
         } else {
-            document.getElementById('outcome').innerText = "TOO EARLY";
-            g.s++;
+            const ev = Math.round(112 - (distErr * 0.7));
+            const la = Math.round(dY * 1.6);
+            const dist = Math.round((ev * ev / 29) * (1 + la/90));
+
+            if (la < 5) { banner.innerText = "GROUND BALL"; banner.style.color = "#fff"; }
+            else if (la >= 5 && la < 25) { banner.innerText = "LINE DRIVE"; banner.style.color = "#00ffcc"; }
+            else if (la >= 25 && la < 45 && ev > 100) { 
+                banner.innerText = "HOME RUN"; banner.style.color = "#efb21e";
+                g.r++; document.getElementById('r-val').innerText = g.r;
+                showStats(ev, la, dist);
+            } else { banner.innerText = "FLY OUT"; banner.style.color = "#ff4d4d"; }
         }
-        updateUI();
+        setTimeout(() => { banner.style.opacity = '0'; }, 1500);
     });
+
+    function showStats(ev, la, dist) {
+        document.getElementById('sc-ev').innerText = ev;
+        document.getElementById('sc-la').innerText = la;
+        document.getElementById('sc-dist').innerText = dist;
+        document.getElementById('statcast-overlay').style.display = 'flex';
+    }
 </script>
 </body>
 </html>
