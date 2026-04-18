@@ -1,153 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Statcast Precision</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@900&display=swap');
-        :root { --gold: #fcc419; --bg: #000; --safe-bottom: env(safe-area-inset-bottom); }
-        * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+<style>
+    /* Prevent Safari's elastic scrolling and address bar shifts */
+    html, body { 
+        height: 100%; 
+        overflow: hidden; 
+        position: fixed; 
+        width: 100%; 
+    }
 
-        /* 1. VIDEO (Top 45%) */
-        #v-area { height: 45vh; background: #000; position: relative; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+    #grid { 
+        width: 180px; 
+        height: 240px; 
+        background: #080808; 
+        border: 2px solid #444; 
+        position: relative;
+        /* Ensures the grid is always touch-ready on mobile Safari */
+        touch-action: none; 
+        -webkit-tap-highlight-color: transparent;
+    }
 
-        /* 2. DASHBOARD (Bottom 55%) */
-        #dashboard { flex-grow: 1; display: flex; padding-bottom: var(--safe-bottom); }
-
-        /* LEFT: ANALYTICS */
-        #left-panel { width: 45%; padding: 20px; border-right: 1px solid #222; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
-        .label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
-        .val { font-family: 'JetBrains Mono'; font-size: 16px; color: #fff; }
-        .hero { color: var(--gold); font-size: 24px; }
-
-        /* RIGHT: INTERACTION */
-        #right-panel { width: 55%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* THE INTERACTION GRID */
-        #grid { 
-            width: 180px; height: 240px; background: #050505; border: 1px solid #222; position: relative;
-            /* Coordinate Space: X: -1.5 to 1.5 | Y: 1.0 to 4.0 */
-        }
-        
-        /* STRIKE ZONE VISUAL (X: -0.75 to 0.75 | Y: 1.5 to 3.5) */
-        #strike-zone {
-            position: absolute;
-            left: 25%; top: 16.6%; width: 50%; height: 50%; /* Adjusted for 1-4 Y-range */
-            border: 1px solid rgba(255,255,255,0.2);
-            pointer-events: none;
-        }
-
-        .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #pitch { width: 12px; height: 12px; background: #fff; box-shadow: 0 0 10px #fff; z-index: 10; opacity: 0; }
-        #swing { width: 36px; height: 36px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.1); z-index: 11; opacity: 0; }
-    </style>
-</head>
-<body>
-
-<div id="v-area">
-    <video id="v" playsinline autoplay muted loop>
-        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-    </video>
-</div>
-
-<div id="dashboard">
-    <div id="left-panel">
-        <div class="stat"><div class="label">Exit Velocity</div><div id="ev" class="val hero">0.0 MPH</div></div>
-        <div class="stat"><div class="label">Timing</div><div id="time" class="val">---</div></div>
-        <div class="stat"><div class="label">Zone Result</div><div id="res" class="val">---</div></div>
-    </div>
-    <div id="right-panel">
-        <div id="grid" onpointerdown="handleTap(event)">
-            <div id="strike-zone"></div>
-            <div id="pitch" class="marker"></div>
-            <div id="swing" class="marker"></div>
-        </div>
-    </div>
-</div>
+    /* Fixed Pixel String Zone for iPhone 17 Plus High PPI */
+    #strike-zone {
+        position: absolute;
+        left: 45px;   /* -0.75 */
+        top: 40px;    /* 3.5 High */
+        width: 90px;  /* 0.75 - (-0.75) */
+        height: 160px; /* 3.5 - 1.5 */
+        border: 1px solid #ffffff;
+        pointer-events: none;
+    }
+</style>
 
 <script>
-    const v = document.getElementById('v');
-    const PITCHES = [
-        { t: 0.92,  x: -0.25, y: 2.1 }, { t: 6.40,  x: 0.85,  y: 3.2 }, 
-        { t: 10.86, x: -0.10, y: 1.7 }, { t: 16.08, x: 0.55,  y: 2.8 },
-        { t: 21.50, x: -0.90, y: 3.8 }, { t: 28.03, x: 0.15,  y: 2.4 }
-    ];
+    // THE BIBLE: FIXED PIXEL MAPPING
+    // X range: -1.5 (0px) to 1.5 (180px)
+    // Y range: 1.0 (240px) to 4.0 (0px)
+    
+    const mapX = (x) => ((x + 1.5) / 3) * 180;
+    const mapY = (y) => (1 - (y - 1) / 3) * 240;
 
-    let state = { currentIdx: -1, lastProcessedIdx: -1 };
-
-    // Coordinate Mapping logic (X: -1.5/1.5, Y: 1.0/4.0)
-    const mapX = (val) => ((val + 1.5) / 3) * 180;
-    const mapY = (val) => (1 - (val - 1) / 3) * 240;
-
-    v.ontimeupdate = () => {
-        const now = v.currentTime;
-        let activeIdx = -1;
-
-        for (let i = 0; i < PITCHES.length; i++) {
-            const p = PITCHES[i];
-            const nextP = PITCHES[i + 1];
-            
-            // Calculate the "Halfway Point" to the next pitch
-            const resetTime = nextP ? p.t + (nextP.t - p.t) / 2 : p.t + 2;
-
-            // 1. Logic Reset: Only allow interaction in the ±0.4s window
-            if (now >= p.t - 0.4 && now < p.t + 0.4) {
-                activeIdx = i;
-            }
-
-            // 2. Visual Persistence: Keep the white ball visible until the reset point
-            if (now >= p.t - 0.1 && now < resetTime) {
-                const pDot = document.getElementById('pitch');
-                pDot.style.left = mapX(p.x) + 'px';
-                pDot.style.top = mapY(p.y) + 'px';
-                pDot.style.opacity = 1;
-            }
-        }
-
-        // Reset processed state when entering a new interaction window
-        if (activeIdx !== state.currentIdx) {
-            state.currentIdx = activeIdx;
-            if (activeIdx !== -1) state.lastProcessedIdx = -1; 
-        }
-    };
-
-    function handleTap(e) {
-        const rect = document.getElementById('grid').getBoundingClientRect();
-        const sx = e.clientX - rect.left;
-        const sy = e.clientY - rect.top;
-
-        // Visual Swing Feedback
-        const sDot = document.getElementById('swing');
-        sDot.style.left = sx + 'px'; sDot.style.top = sy + 'px'; sDot.style.opacity = 1;
-
-        // Logic check: Is there a "live" pitch in the window?
-        if (state.currentIdx !== -1 && state.lastProcessedIdx === -1) {
-            const p = PITCHES[state.currentIdx];
-            const px = mapX(p.x);
-            const py = mapY(p.y);
-            const dist = Math.sqrt(Math.pow(sx - px, 2) + Math.pow(sy - py, 2));
-
-            // Determine Ball vs Strike
-            const isStrike = (p.x >= -0.75 && p.x <= 0.75 && p.y >= 1.5 && p.y <= 3.5);
-            document.getElementById('res').innerText = isStrike ? "STRIKE" : "BALL";
-            document.getElementById('res').style.color = isStrike ? "var(--gold)" : "#666";
-
-            if (dist < 40) { // Contact Radius
-                const ev = Math.max(0, 112 - (dist * 1.5)).toFixed(1);
-                const dt = v.currentTime - p.t;
-                document.getElementById('ev').innerText = ev + " MPH";
-                document.getElementById('time').innerText = Math.abs(dt) < 0.1 ? "GOOD" : (dt < 0 ? "EARLY" : "LATE");
-            } else {
-                document.getElementById('ev').innerText = "0.0 MPH";
-                document.getElementById('time').innerText = "WHIFF";
-            }
-            
-            state.lastProcessedIdx = state.currentIdx; // Prevent double-tapping same pitch
-        }
-    }
+    // First Pitch Validation: (-0.75, 3.25)
+    // Pixel X: ((-0.75 + 1.5) / 3) * 180 = 45px
+    // Pixel Y: (1 - (3.25 - 1) / 3) * 240 = 60px
+    // Result: Sitting exactly on the top-left corner of the white string.
 </script>
-</body>
-</html>
