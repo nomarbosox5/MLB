@@ -3,76 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Pro | Live Feed</title>
+    <title>Statcast Mobile MVP</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@900&display=swap');
-        :root { --gold: #fcc419; --bg: #050505; --neon: #00f2ff; --red: #ff3e3e; }
-        
+        :root { --gold: #fcc419; --bg: #000; --neon: #00f2ff; --red: #ff3e3e; }
         * { touch-action: none; box-sizing: border-box; -webkit-user-select: none; }
         body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* HEADER / SCOREBUG */
-        #bug { 
-            height: 14vh; display: flex; align-items: center; justify-content: space-between; 
-            padding: 0 20px; background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
-            border-bottom: 2px solid #333; z-index: 10;
+        /* 1. TOP SECTION: THE VIDEO FEED */
+        #v-area { height: 45vh; position: relative; background: #111; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #222; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .start-btn { border: 2px solid #fff; color: #fff; padding: 12px 24px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* 2. MIDDLE SECTION: ALL GRAPHICS BELOW VIDEO */
+        #analysis-bar { 
+            height: 18vh; display: flex; align-items: center; justify-content: space-between; 
+            padding: 10px 15px; background: #0a0a0a; border-bottom: 1px solid #333;
         }
-        .count-group { display: flex; flex-direction: column; gap: 4px; }
-        .count-row { display: flex; align-items: center; }
-        .label { font-size: 12px; font-weight: 900; width: 15px; color: #666; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background: #222; margin-right: 6px; border: 1px solid #444; }
-        .dot.active-s { background: var(--gold); box-shadow: 0 0 10px var(--gold); border: none; }
+        .count-col { display: flex; flex-direction: column; gap: 5px; min-width: 60px; }
+        .c-row { display: flex; align-items: center; font-size: 10px; color: #555; font-weight: 900; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; margin-left: 5px; border: 1px solid #333; }
+        .dot.active { background: var(--gold); box-shadow: 0 0 8px var(--gold); border: none; }
         
-        .diamond { position: relative; width: 44px; height: 44px; transform: rotate(45deg); margin: 0 15px; }
-        .base { position: absolute; width: 14px; height: 14px; background: #333; border: 1px solid #555; }
+        .diamond-col { position: relative; width: 40px; height: 40px; transform: rotate(45deg); margin: 0 10px; }
+        .base { position: absolute; width: 12px; height: 12px; background: #222; border: 1px solid #444; }
         #b1 { top: 0; right: 0; } #b2 { top: 0; left: 0; } #b3 { bottom: 0; left: 0; }
 
-        .stat-output { text-align: right; min-width: 100px; }
-        .ev-val { font-family: 'JetBrains Mono'; font-size: 28px; color: var(--neon); line-height: 1; }
-        .sub-lab { font-size: 9px; letter-spacing: 1px; color: #555; text-transform: uppercase; margin-top: 4px; }
+        .statcast-col { text-align: right; flex-grow: 1; }
+        .f-label { font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .f-val { font-size: 12px; font-weight: 900; margin-bottom: 2px; }
+        .ev-main { font-family: 'JetBrains Mono'; font-size: 24px; color: var(--gold); line-height: 1; }
 
-        /* VIDEO AREA */
-        #v-area { flex-grow: 1; position: relative; background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        #v-area::after { content: 'VIDEO FEED OFFLINE'; position: absolute; font-size: 10px; color: #333; z-index: 0; }
+        /* 3. BOTTOM SECTION: THE TOUCH GRID */
+        #controls { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #000; }
+        #grid { width: 220px; height: 220px; background: #080808; border: 1px solid #222; position: relative; }
+        #strike-box { position: absolute; left: 25%; top: 25%; width: 50%; height: 50%; border: 1px solid rgba(255,255,255,0.05); }
 
-        /* INPUT GRID */
-        #controls { height: 35vh; background: #000; display: flex; align-items: center; justify-content: center; border-top: 1px solid #222; }
-        #grid { width: 230px; height: 230px; background: #080808; border: 1px solid #333; position: relative; }
-        #strike-box { position: absolute; left: 25%; top: 25%; width: 50%; height: 50%; border: 1px solid rgba(0, 242, 255, 0.2); pointer-events: none; }
-
-        /* MARKERS */
+        /* ASSETS */
         .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
-        #ball { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 15px #fff; z-index: 10; }
+        #ball { width: 14px; height: 14px; background: #fff; box-shadow: 0 0 12px #fff; z-index: 10; }
         #bat { width: 40px; height: 40px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.2); z-index: 11; }
-        
-        .tap-pulse { animation: pulse 0.15s ease-out; }
-        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.8); } 100% { transform: translate(-50%, -50%) scale(1); } }
     </style>
 </head>
-<body onload="setup()">
+<body>
 
-<div id="bug">
-    <div class="count-group">
-        <div class="count-row"><span class="label">B</span><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-        <div class="count-row"><span class="label">S</span><div class="dot" id="s1"></div><div class="dot" id="s2"></div><div class="dot" id="s3"></div></div>
+<div id="v-area">
+    <div id="overlay" onclick="startApp()"><div class="start-btn">Initialize Feed</div></div>
+    <video id="v" playsinline muted loop>
+        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
+    </video>
+</div>
+
+<div id="analysis-bar">
+    <div class="count-col">
+        <div class="c-row">B <div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="c-row">S <div class="dot" id="s1"></div><div class="dot" id="s2"></div><div class="dot" id="s3"></div></div>
     </div>
-    
-    <div class="diamond">
+
+    <div class="diamond-col">
         <div class="base" id="b2"></div><div class="base" id="b1"></div><div class="base" id="b3"></div>
     </div>
 
-    <div class="stat-output">
-        <div id="timing" class="sub-lab" style="color:#777">SYSTEM READY</div>
-        <div id="ev" class="ev-val">0.0</div>
-        <div class="sub-lab">MPH EXIT VELO</div>
+    <div class="statcast-col">
+        <div class="f-label">Timing / Result</div>
+        <div id="t-val" class="f-val">---</div>
+        <div id="ev" class="ev-main">0.0</div>
+        <div class="f-label">EXIT VELO</div>
     </div>
-</div>
-
-<div id="v-area">
-    <video id="v" playsinline muted autoplay loop>
-        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-    </video>
 </div>
 
 <div id="controls">
@@ -93,25 +91,20 @@
     ];
 
     let state = { idx: -1, strikes: 0 };
-    const getX = (val) => 115 + (val * 45);
-    const getY = (val) => 115 - (val * 45);
+    const getX = (val) => 110 + (val * 45);
+    const getY = (val) => 110 - (val * 45);
 
-    function setup() { 
-        v.play().catch(() => console.log("Video wait for interaction")); 
-    }
+    function startApp() { document.getElementById('overlay').style.display = 'none'; v.play(); }
 
     v.ontimeupdate = () => {
-        // Find pitch within +- 0.4s window
         let match = PITCHES.findIndex(p => v.currentTime >= p.t - 0.4 && v.currentTime < p.t + 0.4);
         const b = document.getElementById('ball');
-        
         if (match !== -1) {
             if (match !== state.idx) {
                 state.idx = match;
                 b.style.left = getX(PITCHES[match].x) + 'px';
                 b.style.top = getY(PITCHES[match].y) + 'px';
             }
-            // Ball fades in as it approaches arrival time
             b.style.opacity = (v.currentTime >= PITCHES[match].t - 0.1) ? 1 : 0.3;
         } else {
             b.style.opacity = 0;
@@ -123,11 +116,7 @@
         const rect = document.getElementById('grid').getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
-        
         const bat = document.getElementById('bat');
-        bat.classList.remove('tap-pulse');
-        void bat.offsetWidth;
-        bat.classList.add('tap-pulse');
         bat.style.left = sx + 'px'; bat.style.top = sy + 'px'; bat.style.opacity = 1;
 
         if (state.idx !== -1) {
@@ -135,30 +124,23 @@
             const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
             const dt = v.currentTime - p.t;
 
-            // Must be within 45px of the white ball to "Contact"
-            if (dist < 45) {
-                document.getElementById('ev').innerText = Math.max(0, 114 - (dist * 1.5)).toFixed(1);
-                const timingNode = document.getElementById('timing');
-                timingNode.innerText = Math.abs(dt) < 0.1 ? "PERFECT" : (dt < 0 ? "EARLY" : "LATE");
-                timingNode.style.color = "var(--neon)";
+            if (dist < 42) {
+                const ev = Math.max(0, 114 - (dist * 1.5)).toFixed(1);
+                document.getElementById('ev').innerText = ev;
+                document.getElementById('t-val').innerText = (Math.abs(dt) < 0.1 ? "GOOD" : (dt < 0 ? "EARLY" : "LATE")) + " / " + (dist < 15 ? "SQUARED" : "SOLID");
                 state.strikes = 0;
             } else {
                 state.strikes = Math.min(3, state.strikes + 1);
                 document.getElementById('ev').innerText = "0.0";
-                document.getElementById('timing').innerText = "STRIKE";
-                document.getElementById('timing').style.color = "var(--red)";
+                document.getElementById('t-val').innerText = "STRIKE / WHIFF";
             }
             updateStrikes();
         }
     }
 
     function updateStrikes() {
-        for(let i=1; i<=3; i++) {
-            document.getElementById('s'+i).className = i <= state.strikes ? 'dot active-s' : 'dot';
-        }
-        if(state.strikes >= 3) {
-            setTimeout(() => { state.strikes = 0; updateStrikes(); }, 800);
-        }
+        for(let i=1; i<=3; i++) document.getElementById('s'+i).className = i <= state.strikes ? 'dot active' : 'dot';
+        if(state.strikes >= 3) setTimeout(() => { state.strikes = 0; updateStrikes(); }, 1000);
     }
 </script>
 </body>
