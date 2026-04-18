@@ -3,152 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Statcast Pro Mobile</title>
+    <title>Statcast Sim Pro</title>
     <style>
-        :root {
-            --gold: #f1c40f;
-            --bg: #0a0a0a;
-            --glass: rgba(255, 255, 255, 0.08);
-            --safe-top: env(safe-area-inset-top);
-        }
-
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, system-ui, sans-serif;
-            overflow: hidden;
-            height: 100svh; /* Smallest Viewport Height for iOS Safari */
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Video Section - Fixed 16:9 for iPhone Pro */
-        #top-set {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #111;
-            position: relative;
-            flex-shrink: 0;
-            border-bottom: 1px solid #333;
-        }
+        :root { --gold: #f1c40f; --blue: #3498db; --red: #e74c3c; --glass: rgba(255, 255, 255, 0.1); }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Helvetica Neue', sans-serif; overflow: hidden; height: 100svh; display: flex; flex-direction: column; }
+        
+        /* Layout Sections */
+        #video-top { width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; border-bottom: 1px solid #333; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Bottom Controls Container */
-        #bottom-set {
-            flex-grow: 1;
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            padding: 10px;
-            gap: 10px;
-            background: var(--bg);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        #data-bottom { flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; background: #050505; padding: 10px; gap: 10px; padding-bottom: env(safe-area-inset-bottom); }
 
-        /* Left Dashboard Spacing */
-        #dashboard {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .broadcast-score {
-            background: #151515;
-            padding: 12px;
-            border-radius: 2px;
-            border-left: 3px solid var(--gold);
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
-
-        .count-row { display: flex; align-items: center; margin: 6px 0; gap: 8px; color: #aaa; }
-        .dots { display: flex; gap: 6px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background: #2a2a2a; transition: 0.2s; }
-        .active-b { background: #3498db; box-shadow: 0 0 8px #3498db; }
-        .active-s { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
-        .active-o { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
-
-        .feedback-card {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .label { font-size: 9px; color: #777; text-transform: uppercase; margin-bottom: 2px; font-weight: bold; }
-        .val { font-size: 16px; font-weight: 900; margin-bottom: 8px; color: #eee; }
-        .speed-val { color: var(--gold); font-size: 20px; }
-
-        /* Right Interaction Zone */
-        #zone-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #strike-zone {
-            width: 160px;
-            height: 220px;
-            border: 2px solid rgba(255,255,255,0.6);
-            position: relative;
-            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.2));
-            touch-action: none;
-        }
-
-        .grid-l { position: absolute; background: rgba(255,255,255,0.15); pointer-events: none; }
+        /* Left Side: Stats & Spray Chart */
+        #left-col { display: flex; flex-direction: column; gap: 10px; }
+        .stat-card { background: var(--glass); padding: 10px; border-radius: 4px; border-left: 3px solid var(--gold); }
+        .label { font-size: 9px; color: #888; text-transform: uppercase; }
+        .val { font-size: 16px; font-weight: 900; }
         
-        /* Ball/Bat Aesthetics */
-        .ball-mark { 
-            position: absolute; width: 18px; height: 18px; 
-            background: radial-gradient(circle at 30% 30%, #fff, #bbb);
-            border-radius: 50%; transform: translate(-50%, -50%); 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10;
+        #field-map { 
+            width: 100%; flex-grow: 1; background: url('https://img.icons8.com/ios/100/ffffff/baseball-field.png') no-repeat center; 
+            background-size: contain; position: relative; border: 1px solid #222; border-radius: 4px;
         }
-        .bat-mark { 
-            position: absolute; width: 8px; height: 45px; 
-            background: linear-gradient(to right, #6d4c41, #3e2723);
-            border-radius: 2px; transform: translate(-50%, -50%) rotate(45deg); 
-            z-index: 11; border: 0.5px solid #000;
-        }
+        .hit-dot { position: absolute; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 5px var(--gold); }
 
-        /* Score Display Detroit/SD */
-        .teams { font-weight: 800; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; display: flex; justify-content: space-between;}
+        /* Right Side: Strike Zone */
+        #right-col { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #strike-zone { 
+            width: 150px; height: 210px; border: 2px solid rgba(255,255,255,0.5); position: relative; 
+            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%); touch-action: none;
+        }
+        .grid-line { position: absolute; background: rgba(255,255,255,0.1); pointer-events: none; }
+
+        /* Physics Objects */
+        .pitch-result { position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; }
+        .bat-dot { position: absolute; width: 35px; height: 35px; background: rgba(241, 196, 15, 0.3); border: 1px solid var(--gold); border-radius: 50%; transform: translate(-50%, -50%); z-index: 6; }
+        
+        /* Count Display */
+        .count-bar { display: flex; gap: 15px; margin-bottom: 10px; font-weight: bold; font-size: 12px; }
+        .dots { display: flex; gap: 4px; align-items: center; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; }
+        .b-act { background: var(--blue); } .s-act { background: var(--gold); } .o-act { background: var(--red); }
     </style>
 </head>
 <body>
 
-<div id="top-set">
-    <video id="v" autoplay muted loop playsinline poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
-        <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
-    </video>
+<div id="video-top">
+    <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
-<div id="bottom-set">
-    <div id="dashboard">
-        <div class="broadcast-score">
-            <div class="teams"><span>DET 0</span> <span>SD 3</span></div>
-            <div class="count-row">B <div class="dots" id="b-row"></div></div>
-            <div class="count-row">S <div class="dots" id="s-row"></div></div>
-            <div class="count-row">O <div class="dots" id="o-row"></div></div>
+<div id="data-bottom">
+    <div id="left-col">
+        <div class="count-bar">
+            <span>RUNS <span id="run-val">0</span></span>
+            <div class="dots">B <div id="b-dots" class="dots"></div></div>
+            <div class="dots">S <div id="s-dots" class="dots"></div></div>
+            <div class="dots">O <div id="o-dots" class="dots"></div></div>
         </div>
-        
-        <div class="feedback-card" id="fb" style="visibility: hidden;">
-            <div class="label">Swing Timing</div>
-            <div id="t-val" class="val">GOOD</div>
-            <div class="label">Contact</div>
-            <div id="c-val" class="val">SQUARED UP</div>
-            <div class="label">Hit Speed</div>
-            <div id="s-val" class="val speed-val">97 MPH</div>
+        <div class="stat-card" id="swing-feedback" style="visibility:hidden">
+            <div class="label">Timing / Contact</div>
+            <div id="res-text" class="val">---</div>
+            <div class="label">Exit Velocity</div>
+            <div id="res-speed" class="val" style="color:var(--gold)">0 MPH</div>
         </div>
+        <div id="field-map"></div>
     </div>
 
-    <div id="zone-wrapper">
+    <div id="right-col">
         <div id="strike-zone">
-            <div class="grid-l" style="width:1px; height:100%; left:33.3%"></div>
-            <div class="grid-l" style="width:1px; height:100%; left:66.6%"></div>
-            <div class="grid-l" style="height:1px; width:100%; top:33.3%"></div>
-            <div class="grid-l" style="height:1px; width:100%; top:66.6%"></div>
+            <div class="grid-line" style="width:1px; height:100%; left:33%"></div>
+            <div class="grid-line" style="width:1px; height:100%; left:66%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:33%"></div>
+            <div class="grid-line" style="height:1px; width:100%; top:66%"></div>
         </div>
     </div>
 </div>
@@ -156,9 +81,8 @@
 <script>
     const v = document.getElementById('v');
     const zone = document.getElementById('strike-zone');
-    const fb = document.getElementById('fb');
+    const field = document.getElementById('field-map');
     
-    // Exact Pitch Data from user
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
         { t: 10.86, x: -0.25, y: 0.25 }, { t: 16.08, x: 0.15, y: 0.10 },
@@ -166,72 +90,146 @@
         { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
-    let state = { b:0, s:0, o:0 };
+    let state = { b:0, s:0, o:0, runs:0 };
+    let hasSwungAtCurrent = false;
 
-    function refreshUI() {
-        const draw = (id, count, max, cls) => {
+    function updateScoreboard() {
+        const render = (id, cur, max, cls) => {
             const el = document.getElementById(id); el.innerHTML = '';
-            for(let i=0; i<max; i++) el.innerHTML += `<div class="dot ${i<count?cls:''}"></div>`;
+            for(let i=0; i<max; i++) el.innerHTML += `<div class="dot ${i<cur?cls:''}"></div>`;
         };
-        draw('b-row', state.b, 3, 'active-b');
-        draw('s-row', state.s, 2, 'active-s');
-        draw('o-row', state.o, 2, 'active-o');
+        render('b-dots', state.b, 3, 'b-act');
+        render('s-dots', state.s, 2, 's-act');
+        render('o-dots', state.o, 2, 'o-act');
+        document.getElementById('run-val').innerText = state.runs;
     }
 
-    // Handle Mobile Taps
     zone.addEventListener('touchstart', (e) => {
         e.preventDefault();
         const r = zone.getBoundingClientRect();
         const t = e.touches[0];
-        process(t.clientX - r.left, t.clientY - r.top);
+        handleAction(t.clientX - r.left, t.clientY - r.top);
     }, {passive: false});
 
-    function process(tx, ty) {
-        const now = v.currentTime;
-        const p = pitches.find(p => Math.abs(now - p.t) < 0.6);
+    zone.addEventListener('mousedown', (e) => {
+        const r = zone.getBoundingClientRect();
+        handleAction(e.clientX - r.left, e.clientY - r.top);
+    });
 
-        zone.querySelectorAll('.bat-mark, .ball-mark').forEach(m => m.remove());
-        const bat = document.createElement('div'); bat.className = 'bat-mark';
+    function handleAction(tx, ty) {
+        if(hasSwungAtCurrent) return;
+        const now = v.currentTime;
+        const p = pitches.find(p => Math.abs(now - p.t) < 0.7);
+
+        // Clear only the current indicators, not the whole field
+        zone.querySelectorAll('.bat-dot, .pitch-result').forEach(m => m.remove());
+        const bat = document.createElement('div'); bat.className = 'bat-dot';
         bat.style.left = tx+'px'; bat.style.top = ty+'px'; zone.appendChild(bat);
 
-        fb.style.visibility = 'visible';
-
         if(p) {
-            const px = ((p.x + 0.75) / 1.5) * 160;
-            const py = ((1.0 - p.y) / 2.0) * 220;
-            const ball = document.createElement('div'); ball.className = 'ball-mark';
+            hasSwungAtCurrent = true;
+            const px = ((p.x + 0.75) / 1.5) * 150;
+            const py = ((1.0 - p.y) / 2.0) * 210;
+            const ball = document.createElement('div'); ball.className = 'pitch-result';
             ball.style.left = px+'px'; ball.style.top = py+'px'; zone.appendChild(ball);
 
             const d = Math.sqrt((tx-px)**2 + (ty-py)**2);
-            const speed = Math.floor(Math.max(0, 108 - (d * 0.8)));
-            
-            document.getElementById('s-val').innerText = speed + " MPH";
-            document.getElementById('c-val').innerText = d < 22 ? "SQUARED UP" : "WEAK";
-            document.getElementById('t-val').innerText = Math.abs(now-p.t) < 0.1 ? "PERFECT" : "GOOD";
-            
-            if(speed < 92) state.s++; else { state.s = 0; state.b = 0; }
+            // Physics: If contact dot (35px wide) doesn't overlap pitch center, it's a whiff
+            if (d > 25) {
+                processWhiff();
+            } else {
+                processHit(d, now, p.t);
+            }
         } else {
-            document.getElementById('c-val').innerText = "WHIFF";
-            document.getElementById('s-val').innerText = "0 MPH";
-            document.getElementById('t-val').innerText = "TOO LATE";
-            state.s++;
+            processWhiff();
         }
-
-        if(state.s >= 3) { state.s=0; state.o++; }
-        if(state.o >= 3) { state.o=0; }
-        refreshUI();
     }
 
-    // Auto-Reset 1s before each pitch
-    setInterval(() => {
-        const next = pitches.find(p => p.t > v.currentTime && p.t - v.currentTime < 1.0);
-        if(next) {
-            zone.querySelectorAll('.bat-mark, .ball-mark').forEach(m => m.remove());
-            fb.style.visibility = 'hidden';
+    function processHit(dist, now, pt) {
+        const speed = Math.floor(108 - (dist * 1.5));
+        const timing = Math.abs(now - pt) < 0.15 ? "PERFECT" : "GOOD";
+        
+        showFeedback(timing + " / SQUARED UP", speed + " MPH");
+        
+        if (speed > 95) {
+            recordOnField();
+            state.runs++;
+            state.s = 0; state.b = 0;
+        } else {
+            state.s++;
         }
+        updateScoreboard();
+    }
+
+    function processWhiff() {
+        showFeedback("TOO LATE / WHIFF", "0 MPH");
+        state.s++;
+        updateScoreboard();
+    }
+
+    function showFeedback(txt, speed) {
+        const fb = document.getElementById('swing-feedback');
+        fb.style.visibility = 'visible';
+        fb.style.opacity = '1';
+        document.getElementById('res-text').innerText = txt;
+        document.getElementById('res-speed').innerText = speed;
+    }
+
+    function recordOnField() {
+        const dot = document.createElement('div');
+        dot.className = 'hit-dot';
+        dot.style.left = (20 + Math.random() * 60) + '%';
+        dot.style.top = (10 + Math.random() * 40) + '%';
+        field.appendChild(dot);
+    }
+
+    // Advanced Loop & Auto-Count Logic
+    let lastPitchIdx = -1;
+    setInterval(() => {
+        const now = v.currentTime;
+        
+        // Reset Logic: Blink 2 seconds before next pitch
+        const nextIdx = pitches.findIndex(p => p.t > now && p.t - now < 2.0);
+        if(nextIdx !== -1) {
+            const timeToNext = pitches[nextIdx].t - now;
+            if(timeToNext < 1.0) {
+                zone.style.opacity = (Math.floor(Date.now()/200) % 2) ? "0.3" : "1";
+            }
+            if(timeToNext < 0.5) {
+                zone.querySelectorAll('.bat-dot, .pitch-result').forEach(m => m.remove());
+                document.getElementById('swing-feedback').style.visibility = 'hidden';
+                hasSwungAtCurrent = false;
+            }
+        } else {
+            zone.style.opacity = "1";
+        }
+
+        // Automatic Ball/Strike logic if user NEVER swings
+        pitches.forEach((p, idx) => {
+            if(now > p.t + 0.8 && lastPitchIdx < idx) {
+                if(!hasSwungAtCurrent) {
+                    // Check if pitch was in zone boundaries
+                    if(Math.abs(p.x) <= 0.75 && Math.abs(p.y) <= 1.0) state.s++; 
+                    else state.b++;
+                    updateScoreboard();
+                }
+                lastPitchIdx = idx;
+                hasSwungAtCurrent = false;
+            }
+        });
+
+        // Loop Reset
+        if(now < 0.5 && lastPitchIdx > 0) {
+            lastPitchIdx = -1;
+            state.b = 0; state.s = 0;
+            updateScoreboard();
+        }
+
+        if(state.s >= 3) { state.s = 0; state.b = 0; state.o++; updateScoreboard(); }
+        if(state.o >= 3) { state.o = 0; updateScoreboard(); }
     }, 100);
 
-    refreshUI();
+    updateScoreboard();
 </script>
 </body>
 </html>
