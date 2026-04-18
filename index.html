@@ -3,47 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Centered Pro</title>
+    <title>Nestico Visual Zones</title>
     <style>
-        :root { --accent: #efb21e; --bg: #0a0a0a; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Helvetica Neue', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; touch-action: none; }
         
-        /* VIDEO AREA */
-        #v-wrap { width: 100%; height: 42vh; background: #000; position: relative; border-bottom: 2px solid #333; }
+        #v-frame { width: 100%; height: 42vh; background: #000; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* HUD TRAY */
-        #tray { flex-grow: 1; display: flex; flex-direction: column; background: #111; }
+        #tray { flex-grow: 1; display: flex; background: #111; border-top: 1px solid #333; }
+
+        #stats { width: 40%; display: flex; flex-direction: column; justify-content: center; padding: 20px; border-right: 1px solid #222; }
+        .data-b { font-size: 1.8rem; color: #efb21e; display: block; margin-bottom: 10px; }
+        .label { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+
+        /* THE MAP WITH VISUAL ZONES */
+        #map-side { width: 60%; display: flex; align-items: center; justify-content: center; position: relative; }
         
-        #stats { display: flex; justify-content: space-around; padding: 15px 5px; background: #000; border-bottom: 1px solid #222; }
-        .s-box { text-align: center; }
-        .s-box span { display: block; font-size: 0.6rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-        .s-box b { font-size: 1.3rem; color: var(--accent); }
-        #r-val { color: #fff; }
-
-        #result-banner { height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.4rem; font-style: italic; text-transform: uppercase; color: #fff; }
-
-        /* CENTERED GAME ZONE */
-        #game-floor { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 20px; }
-        #nestico-frame { 
-            position: relative; width: 220px; height: 260px; 
-            border: 2px solid #444; background: rgba(255,255,255,0.03);
-            /* Grid lines for visualization */
-            background-image: linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px);
-            background-size: 20px 20px;
+        #nestico-container { 
+            position: relative; width: 210px; height: 250px; 
+            background: #0a0a0a; border: 1px solid #333; 
         }
 
-        /* HIT VISUALS */
+        /* THE VISUAL STRIKE ZONE (Inner 3x3) */
+        #inner-strike-zone {
+            position: absolute;
+            top: 50px; left: 40px; width: 130px; height: 150px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.03);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+        }
+        .cell { border: 0.5px solid rgba(255,255,255,0.1); }
+
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #ball-target { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 12px #fff; opacity: 0; z-index: 5; }
-        #bat-swing { width: 24px; height: 24px; border: 2px solid var(--accent); background: rgba(239, 178, 30, 0.3); display: none; z-index: 10; }
+        #ball { width: 20px; height: 20px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 10; }
+        #bat { width: 32px; height: 32px; border: 3px solid #efb21e; background: rgba(239, 178, 30, 0.2); display: none; z-index: 20; }
         
-        #hit-zone { position: absolute; inset: 0; z-index: 50; touch-action: none; }
+        #hit-gate { position: absolute; inset: 0; z-index: 100; -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body>
 
-<div id="v-wrap" onclick="document.getElementById('v').play()">
+<div id="v-frame" onclick="document.getElementById('v').play()">
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
@@ -51,105 +53,80 @@
 
 <div id="tray">
     <div id="stats">
-        <div class="s-box"><span>Runs Scored</span><b id="r-val">0</b></div>
-        <div class="s-box"><span>Exit Velocity</span><b id="ev-val">0.0</b></div>
-        <div class="s-box"><span>Distance</span><b id="dist-val">0</b></div>
+        <span class="label">Runs</span><b class="data-b" id="runs">0</b>
+        <span class="label">Exit Velo</span><b class="data-b" id="ev">0.0</b>
     </div>
-    
-    <div id="result-banner" id="res-text">READY</div>
 
-    <div id="game-floor">
-        <div id="nestico-frame">
-            <div id="hit-zone"></div>
-            <div id="ball-target" class="dot"></div>
-            <div id="bat-swing" class="dot"></div>
+    <div id="map-side">
+        <div id="nestico-container">
+            <div id="inner-strike-zone">
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            </div>
+            <div id="hit-gate"></div>
+            <div id="ball" class="dot"></div>
+            <div id="bat" class="dot"></div>
         </div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
-    const banner = document.getElementById('result-banner');
-    
-    // CALIBRATED COORDINATES: Mapped to 220x260 Centered Frame
+    // Mapped to 210x250 Container
     const PITCHES = [
-        {t: 0.92, x: 55,  y: 45},  
-        {t: 6.40, x: 90,  y: 30},  
-        {t: 10.86,x: 105, y: 80},  
-        {t: 16.08,x: 145, y: 100}, 
-        {t: 21.50,x: 160, y: 80},  
-        {t: 28.03,x: 30,  y: 180}, 
-        {t: 36.17,x: 55,  y: 70},  
-        {t: 41.84,x: 35,  y: 140}  
+        {t: 0.92, x: 55, y: 70},   {t: 6.40, x: 105, y: 70},
+        {t: 10.86,x: 105, y: 125}, {t: 16.08,x: 155, y: 125},
+        {t: 21.50,x: 180, y: 110}, {t: 28.03,x: 30, y: 220}, // Way Out (Ball)
+        {t: 36.17,x: 55, y: 125},  {t: 41.84,x: 25, y: 180}  // Edge (Ball)
     ];
 
-    let g = { runs: 0, lastT: 0, activeIdx: -1, swung: false };
+    let g = { r: 0, last: 0, idx: -1, active: false };
 
     v.addEventListener('timeupdate', () => {
         const now = v.currentTime;
-        if (now < g.lastT) { g.activeIdx = -1; g.swung = false; banner.innerText = "NEXT INNING"; }
-        g.lastT = now;
+        if (now < g.last) { g.idx = -1; g.active = false; }
+        g.last = now;
 
-        let idx = -1;
-        PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.6) idx = i; });
+        let cur = -1;
+        PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.6) cur = i; });
 
-        if (idx !== g.activeIdx) {
-            g.activeIdx = idx; g.swung = false;
-            document.getElementById('bat-swing').style.display = 'none';
-            const bt = document.getElementById('ball-target');
-            if (idx !== -1) {
-                bt.style.left = PITCHES[idx].x + 'px';
-                bt.style.top = PITCHES[idx].y + 'px';
-                bt.style.opacity = '1';
-            } else { bt.style.opacity = '0'; }
+        if (cur !== g.idx) {
+            g.idx = cur; g.active = true;
+            document.getElementById('bat').style.display = 'none';
+            const b = document.getElementById('ball');
+            if (cur !== -1) {
+                b.style.left = PITCHES[cur].x + 'px';
+                b.style.top = PITCHES[cur].y + 'px';
+                b.style.opacity = '1';
+            } else { b.style.opacity = '0'; }
         }
     });
 
-    document.getElementById('hit-zone').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (g.activeIdx === -1 || g.swung) return;
-        g.swung = true;
+    document.getElementById('hit-gate').onpointerdown = function(e) {
+        this.setPointerCapture(e.pointerId);
+        if (g.idx === -1 || !g.active) return;
+        g.active = false;
 
-        const rect = document.getElementById('nestico-frame').getBoundingClientRect();
-        const ux = e.touches[0].clientX - rect.left;
-        const uy = e.touches[0].clientY - rect.top;
+        const rect = document.getElementById('nestico-container').getBoundingClientRect();
+        const ux = e.clientX - rect.left;
+        const uy = e.clientY - rect.top;
         
-        const sw = document.getElementById('bat-swing');
-        sw.style.left = ux + 'px'; sw.style.top = uy + 'px'; sw.style.display = 'block';
+        const bUI = document.getElementById('bat');
+        bUI.style.left = ux + 'px'; bUI.style.top = uy + 'px'; bUI.style.display = 'block';
 
-        const p = PITCHES[g.activeIdx];
-        const dist = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
+        const p = PITCHES[g.idx];
+        const err = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
 
-        if (dist < 40) {
-            let ev = 114 - (dist * 0.9);
-            const la = Math.round((p.y - uy) * 1.7);
-            
-            // Sweet spot logic
-            if (dist < 6) {
-                ev += 4;
-                banner.innerText = "SQUARED UP";
-                banner.style.color = "#efb21e";
-            } else {
-                banner.innerText = la > 22 ? "FLY BALL" : "GROUND BALL";
-                banner.style.color = "#fff";
+        if (err < 40) {
+            let ev = 114 - (err * 0.9);
+            const la = Math.round((p.y - uy) * 2.1);
+            document.getElementById('ev').innerText = Math.round(ev) + " MPH";
+            if (la >= 22 && la <= 38 && ev > 102) {
+                g.r++; document.getElementById('runs').innerText = g.r;
             }
-
-            const finalEv = Math.round(ev);
-            const distance = Math.round((finalEv * finalEv / 28) * (1 + la/90));
-
-            document.getElementById('ev-val').innerText = finalEv + " MPH";
-            document.getElementById('dist-val').innerText = distance + " FT";
-            
-            if (la >= 24 && la <= 36 && finalEv > 103) {
-                g.runs++;
-                document.getElementById('r-val').innerText = g.runs;
-                banner.innerText = "HOME RUN";
-            }
-        } else {
-            banner.innerText = "WHIFF";
-            banner.style.color = "red";
         }
-    });
+    };
 </script>
 </body>
 </html>
