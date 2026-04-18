@@ -3,40 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MLB Statcast Pro</title>
+    <title>Statcast MVP - Final Layout</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
         /* VIDEO SECTION */
-        #v-sec { width: 100%; position: relative; border-bottom: 2px solid #333; }
+        #v-sec { width: 100%; position: relative; }
         video { width: 100%; max-height: 40vh; display: block; }
 
-        /* SCOREBUG (Top Right over Video) */
-        #scorebug { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 4px; display: flex; gap: 15px; border: 1px solid #444; font-size: 0.9rem; font-weight: bold; }
-        .diamond-box { display: grid; grid-template-columns: repeat(2, 10px); gap: 4px; transform: rotate(45deg); margin-top: 4px; }
-        .base { width: 8px; height: 8px; border: 1px solid #666; }
-        .base.active { background: #f1c40f; border-color: #fff; }
+        /* UNDER-VIDEO BROADCAST BAR */
+        #broadcast-bar { 
+            background: #111; border-bottom: 2px solid #333; padding: 8px 15px; 
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold;
+        }
+        .score-box span { color: #00ffcc; margin-left: 5px; }
+        .count-box { letter-spacing: 2px; color: #aaa; }
+        .count-box b { color: #fff; }
 
-        /* MAIN DASHBOARD */
-        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px 1fr; align-items: center; padding: 10px; gap: 10px; }
+        /* MAIN DASHBOARD: Stats Left, Zone Right */
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 160px; align-items: center; padding: 10px 20px; gap: 20px; }
         
-        /* LEFT: TELEMETRY */
-        #telemetry { display: flex; flex-direction: column; gap: 4px; }
-        #outcome { font-size: 1.5rem; font-weight: 900; color: #00ffcc; margin: 0; min-height: 1.8rem; text-transform: uppercase; }
-        .stat { font-size: 0.75rem; color: #888; font-family: monospace; }
-        .stat span { color: #fff; }
+        /* LEFT SIDE: REPORTS & VISUALIZER */
+        #reports { display: flex; flex-direction: column; gap: 10px; }
+        #timing-ui { font-size: 0.8rem; font-weight: 800; min-height: 1.2rem; letter-spacing: 1px; }
+        #outcome { font-size: 1.8rem; font-weight: 900; color: #00ffcc; text-transform: uppercase; margin: 0; }
+        .stat-group { display: flex; flex-direction: column; gap: 2px; }
+        .stat { font-size: 0.75rem; color: #777; font-family: monospace; }
+        .stat span { color: #fff; font-weight: bold; }
 
-        /* CENTER: NESTICO BOX */
-        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.02); }
+        /* FIELD VISUALIZER (Nested in Reports) */
+        #field { 
+            position: relative; width: 90px; height: 90px; background: #1a1a1a; 
+            border-radius: 0 100% 0 0; transform: rotate(-45deg); 
+            border-left: 2px solid #444; border-bottom: 2px solid #444; overflow: hidden; margin-top: 10px;
+        }
+        #hit-line { position: absolute; bottom: 0; left: 0; height: 3px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.4s ease-out; }
+
+        /* RIGHT SIDE: NESTICO BOX (160x200) */
+        #nestico-box { position: relative; width: 160px; height: 200px; background: rgba(255,255,255,0.02); border: 1px solid #222; }
         #strike-zone { position: absolute; left: 43px; top: 33px; width: 74px; height: 133px; border: 2px solid rgba(255,255,255,0.8); }
         .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
         #p-dot { width: 16px; height: 16px; background: white; opacity: 0; box-shadow: 0 0 10px #fff; z-index: 5; }
         #s-dot { width: 24px; height: 24px; background: #ff4d4d; border: 1px solid #fff; display: none; z-index: 6; }
         #tap { position: absolute; width: 100%; height: 100%; z-index: 10; }
-
-        /* RIGHT: FIELD VISUALIZER */
-        #field-container { position: relative; width: 100px; height: 100px; background: #1a1a1a; border-radius: 0 100% 0 0; transform: rotate(-45deg); border-left: 2px solid #444; border-bottom: 2px solid #444; overflow: hidden; }
-        #hit-line { position: absolute; bottom: 0; left: 0; height: 2px; background: #00ffcc; transform-origin: left bottom; width: 0; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body>
@@ -45,23 +54,24 @@
     <video id="v" autoplay muted loop playsinline>
         <source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4">
     </video>
-    <div id="scorebug">
-        <div>NYM <span>0</span><br>LAD <span>2</span></div>
-        <div id="count">1 - 0</div>
-        <div class="diamond-box">
-            <div class="base" id="b2"></div>
-            <div class="base active" id="b1"></div>
-            <div class="base" id="b3"></div>
-        </div>
-    </div>
+</div>
+
+<div id="broadcast-bar">
+    <div class="score-box">NYM <span>0</span> &nbsp; LAD <span>2</span></div>
+    <div class="count-box">COUNT: <b id="b-count">0 - 0</b></div>
+    <div style="color:#777">2 OUT</div>
 </div>
 
 <div id="dashboard">
-    <div id="telemetry">
+    <div id="reports">
+        <div id="timing-ui"></div>
         <h1 id="outcome"></h1>
-        <div class="stat">EXIT VELO: <span id="s-exit">-</span></div>
-        <div class="stat">LAUNCH ANGLE: <span id="s-ang">-</span></div>
-        <div class="stat">DISTANCE: <span id="s-dist">-</span></div>
+        <div class="stat-group">
+            <div class="stat">EXIT VELO: <span id="s-exit">-</span></div>
+            <div class="stat">LAUNCH ANG: <span id="s-ang">-</span></div>
+            <div class="stat">DISTANCE: <span id="s-dist">-</span></div>
+        </div>
+        <div id="field"><div id="hit-line"></div></div>
     </div>
 
     <div id="nestico-box">
@@ -70,23 +80,19 @@
         <div id="p-dot" class="dot"></div>
         <div id="s-dot" class="dot"></div>
     </div>
-
-    <div id="field-container">
-        <div id="hit-line"></div>
-    </div>
 </div>
 
 <script>
     const video = document.getElementById('v');
     const PITCHES = [
-        { id:1, t:0.95,  nx:-0.75, ny:3.25 },
-        { id:2, t:6.40,  nx:-0.40, ny:3.50 },
-        { id:3, t:10.86, nx:-0.25, ny:2.75 },
-        { id:4, t:16.08, nx:0.15,  ny:2.60 },
-        { id:5, t:21.50, nx:0.20,  ny:2.75 },
-        { id:6, t:28.03, nx:-0.90, ny:1.75 },
-        { id:7, t:34.20, nx:-0.75, ny:3.00 },
-        { id:8, t:41.84, nx:-0.90, ny:2.25 }
+        { id:1, t:0.85,  nx:-0.75, ny:3.25 },
+        { id:2, t:6.30,  nx:-0.40, ny:3.50 },
+        { id:3, t:10.76, nx:-0.25, ny:2.75 },
+        { id:4, t:15.98, nx:0.15,  ny:2.60 },
+        { id:5, t:21.40, nx:0.20,  ny:2.75 },
+        { id:6, t:27.93, nx:-0.90, ny:1.75 },
+        { id:7, t:34.10, nx:-0.75, ny:3.00 },
+        { id:8, t:40.00, nx:-0.90, ny:2.25 }
     ];
 
     let activeId = null;
@@ -94,14 +100,15 @@
     video.addEventListener('timeupdate', () => {
         const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
         if (active && activeId !== active.id) {
-            // NEW PITCH: WIPE RESULTS
             activeId = active.id;
+            // Clear Dashboard
             document.getElementById('s-dot').style.display = "none";
             document.getElementById('outcome').innerText = "";
+            document.getElementById('timing-ui').innerText = "";
             document.getElementById('hit-line').style.width = "0";
             document.querySelectorAll('.stat span').forEach(s => s.innerText = "-");
             
-            // Show White Dot
+            // Render Target
             const px = ((active.nx + 1.5) / 3.0) * 160;
             const py = 200 - (((active.ny - 1.0) / 3.0) * 200);
             const pd = document.getElementById('p-dot');
@@ -111,7 +118,9 @@
 
     document.getElementById('tap').addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const active = [...PITCHES].reverse().find(p => video.currentTime >= p.t);
+        const now = video.currentTime;
+        const active = PITCHES.find(p => Math.abs(now - p.t) < 0.45); // Generous timing window
+        
         if (!active) return;
 
         const rect = document.getElementById('nestico-box').getBoundingClientRect();
@@ -123,19 +132,25 @@
         const sd = document.getElementById('s-dot');
         sd.style.left = ux + 'px'; sd.style.top = uy + 'px'; sd.style.display = 'block';
 
-        // Physics
+        // Advanced Logic
+        const timeDiff = now - active.t;
         const yDiff = py - uy;
-        const angle = Math.round(yDiff * 2.2);
-        const exit = Math.round(94 + (yDiff * 0.2)); 
-        const dist = Math.round((exit ** 2 / 31) * (1 + angle/50));
+        const angle = Math.round(yDiff * 2.3);
+        const exit = Math.round(105 - (Math.abs(timeDiff) * 40) - (Math.abs(yDiff) * 0.4));
+        const dist = Math.round((exit ** 2 / 30) * (1 + angle/45));
+
+        // Timing UI
+        const tUI = document.getElementById('timing-ui');
+        if (Math.abs(timeDiff) < 0.06) { tUI.innerText = "ON TIME"; tUI.style.color = "#00ffcc"; }
+        else if (timeDiff < 0) { tUI.innerText = "EARLY"; tUI.style.color = "#ffcc00"; }
+        else { tUI.innerText = "LATE"; tUI.style.color = "#ff4d4d"; }
 
         if (Math.abs(yDiff) < 35) {
             document.getElementById('s-exit').innerText = exit + " MPH";
             document.getElementById('s-ang').innerText = angle + "°";
             document.getElementById('s-dist').innerText = Math.max(0, dist) + " FT";
-            document.getElementById('outcome').innerText = dist > 380 ? "HOME RUN" : "IN PLAY";
+            document.getElementById('outcome').innerText = dist > 385 ? "HOME RUN" : "IN PLAY";
             
-            // Visualizer Line
             const line = document.getElementById('hit-line');
             line.style.width = Math.min(dist/4, 100) + "%";
             line.style.transform = `rotate(${Math.max(-10, -angle)}deg)`;
