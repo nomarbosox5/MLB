@@ -3,95 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Statcast Physics Lab</title>
+    <title>Statcast Physics Pro</title>
     <style>
-        :root { --gold: #f1c40f; --blue: #3498db; --glass: rgba(255, 255, 255, 0.08); }
+        :root { --gold: #f1c40f; --blue: #3498db; --glass: rgba(255, 255, 255, 0.15); }
         body { 
             margin: 0; background: #000; color: #fff; font-family: -apple-system, sans-serif; 
             overflow: hidden; height: 100svh; display: flex; flex-direction: column;
             padding-top: env(safe-area-inset-top);
         }
         
-        #video-top { width: 100%; aspect-ratio: 16 / 9; background: #000; flex-shrink: 0; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        /* 20% Side Crop to Zoom Video */
+        #v-container { 
+            width: 100%; aspect-ratio: 16 / 9; background: #000; overflow: hidden; position: relative; flex-shrink: 0; 
+        }
+        video { 
+            width: 140%; /* Zooms in */
+            height: 100%; 
+            object-fit: cover; 
+            margin-left: -20%; /* Crops 20% off left/right */
+        }
 
-        #main-ui { 
-            flex-grow: 1; display: grid; grid-template-columns: 1.1fr 0.9fr; 
+        #ui-main { 
+            flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; 
             background: #080808; padding: 12px; gap: 10px;
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* PERMANENT FIELD & PHYSICS ESTIMATOR */
-        #field-container { display: flex; flex-direction: column; gap: 8px; position: relative; }
-        #spray-chart { 
-            flex-grow: 1; background: #1a3a1a; border-radius: 8px; border: 1px solid #333;
+        #left-col { display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Compact Field */
+        #field { 
+            height: 120px; background: #1a331a; border-radius: 8px; border: 1px solid #333;
             position: relative; overflow: hidden;
-            background-image: 
-                radial-gradient(circle at 50% 100%, #2e7d32 0%, #1b5e20 100%),
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 100% 100%, 20px 20px;
+            background-image: radial-gradient(circle at 50% 90%, #2e7d32 0%, #1b5e20 100%);
         }
-
-        /* Physics "Pool Ball" Line */
-        #estimator-line {
-            position: absolute; bottom: 5%; left: 50%; width: 3px;
+        #p-line {
+            position: absolute; bottom: 10%; left: 50%; width: 4px;
             background: linear-gradient(to top, var(--gold), transparent);
-            transform-origin: bottom center; opacity: 0; transition: 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-            filter: drop-shadow(0 0 8px var(--gold));
+            transform-origin: bottom center; opacity: 0; z-index: 2;
         }
 
-        /* HUD STATS */
-        .stat-box { background: var(--glass); padding: 10px; border-radius: 4px; border-left: 3px solid var(--gold); }
-        .label { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .data { font-size: 15px; font-weight: 900; }
+        /* Stats Cards */
+        .card { background: var(--glass); padding: 8px; border-radius: 4px; border-left: 3px solid var(--gold); }
+        .label { font-size: 10px; color: #aaa; text-transform: uppercase; }
+        .val { font-size: 16px; font-weight: 900; }
 
-        .count-dots { display: flex; gap: 4px; margin-top: 4px; }
+        .dots { display: flex; gap: 4px; margin-top: 4px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #222; }
-        .s-act { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
-        .b-act { background: var(--blue); }
+        .s-on { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+        .b-on { background: var(--blue); }
 
-        /* INTERACTION ZONE */
-        #zone-box { display: flex; justify-content: center; align-items: center; }
-        #strike-zone { 
+        /* Interaction Zone */
+        #right-col { display: flex; justify-content: center; align-items: center; }
+        #sz { 
             width: 140px; height: 190px; border: 2px solid rgba(255,255,255,0.4); 
-            position: relative; background: rgba(255,255,255,0.03); touch-action: none;
+            position: relative; background: rgba(255,255,255,0.02); touch-action: none;
         }
         .grid-l { position: absolute; background: rgba(255,255,255,0.1); pointer-events: none; }
 
-        /* PHYSICS ELEMENTS */
-        .ball-spot { position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; box-shadow: 0 0 10px #fff; }
-        .bat-circle { position: absolute; width: 44px; height: 44px; background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; }
+        /* Physics Objects */
+        .ball { position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 30; box-shadow: 0 0 15px #fff; }
+        .bat { position: absolute; width: 45px; height: 45px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 20; }
     </style>
 </head>
 <body>
 
-<div id="video-top">
+<div id="v-container">
     <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
-<div id="main-ui">
-    <div id="field-container">
-        <div class="stat-box">
+<div id="ui-main">
+    <div id="left-col">
+        <div class="card">
             <div style="display:flex; justify-content:space-between">
-                <div><div class="label">Strikes</div><div id="s-row" class="count-dots"></div></div>
-                <div><div class="label">Balls</div><div id="b-row" class="count-dots"></div></div>
+                <div><div class="label">Runs</div><div id="runs" class="val">0</div></div>
+                <div><div class="label">S</div><div id="s-dots" class="dots"></div></div>
+                <div><div class="label">B</div><div id="b-dots" class="dots"></div></div>
             </div>
         </div>
+        
+        <div id="field"><div id="p-line"></div></div>
 
-        <div id="spray-chart">
-            <div id="estimator-line"></div>
-            <div style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:12px; height:12px; background:#fff; clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);"></div>
-        </div>
-
-        <div id="feedback" class="stat-box" style="opacity:0">
-            <div class="label" id="res-timing">GOOD TIMING</div>
-            <div class="data" id="res-dist">365 FT</div>
-            <div class="data" id="res-velo" style="color:var(--gold)">103 MPH</div>
+        <div class="card" id="fb" style="opacity:0">
+            <div class="label" id="timing-txt">TIMING</div>
+            <div class="val" id="contact-txt">SQUARED UP</div>
+            <div class="val" id="velo-txt" style="color:var(--gold)">0 MPH</div>
         </div>
     </div>
 
-    <div id="zone-box">
-        <div id="strike-zone">
+    <div id="right-col">
+        <div id="sz">
             <div class="grid-l" style="width:1px; height:100%; left:33%"></div>
             <div class="grid-l" style="width:1px; height:100%; left:66%"></div>
             <div class="grid-l" style="height:1px; width:100%; top:33%"></div>
@@ -102,9 +103,9 @@
 
 <script>
     const v = document.getElementById('v');
-    const zone = document.getElementById('strike-zone');
-    const estLine = document.getElementById('estimator-line');
-    const fb = document.getElementById('feedback');
+    const sz = document.getElementById('sz');
+    const pLine = document.getElementById('p-line');
+    const fb = document.getElementById('fb');
 
     const pitches = [
         { t: 0.92, x: -0.75, y: 0.75 }, { t: 6.40, x: -0.40, y: 1.00 },
@@ -113,107 +114,114 @@
         { t: 36.17, x: -0.95, y: 0.00 }, { t: 41.84, x: -0.80, y: 0.25 }
     ];
 
-    let state = { s:0, b:0 };
-    let hasSwung = false;
+    let state = { s:0, b:0, runs:0 };
+    let swingLocked = false;
+    let lastProcessedIdx = -1;
 
-    function updateHUD() {
-        const draw = (id, cur, max, cls) => {
+    function updateUI() {
+        const render = (id, cur, max, cls) => {
             const el = document.getElementById(id); el.innerHTML = '';
             for(let i=0; i<max; i++) el.innerHTML += `<div class="dot ${i<cur?cls:''}"></div>`;
         };
-        draw('s-row', state.s, 2, 's-act');
-        draw('b-row', state.b, 3, 'b-act');
+        render('s-dots', state.s, 2, 's-on');
+        render('b-dots', state.b, 3, 'b-on');
+        document.getElementById('runs').innerText = state.runs;
     }
 
-    zone.addEventListener('touchstart', (e) => {
+    sz.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        if(hasSwung) return;
-        const r = zone.getBoundingClientRect();
+        if(swingLocked) return;
+        const r = sz.getBoundingClientRect();
         const t = e.touches[0];
-        calculatePhysics(t.clientX - r.left, t.clientY - r.top);
+        processSwing(t.clientX - r.left, t.clientY - r.top);
     });
 
-    function calculatePhysics(tx, ty) {
-        hasSwung = true;
+    function processSwing(tx, ty) {
+        swingLocked = true;
         const now = v.currentTime;
-        const p = pitches.find(p => Math.abs(now - p.t) < 0.65);
+        const pIdx = pitches.findIndex(p => Math.abs(now - p.t) < 0.7);
+        const p = pitches[pIdx];
 
-        zone.querySelectorAll('.ball-spot, .bat-circle').forEach(m => m.remove());
-        const bat = document.createElement('div'); bat.className = 'bat-circle';
-        bat.style.left = tx+'px'; bat.style.top = ty+'px'; zone.appendChild(bat);
+        sz.querySelectorAll('.ball, .bat').forEach(e => e.remove());
+        const bat = document.createElement('div'); bat.className = 'bat';
+        bat.style.left = tx+'px'; bat.style.top = ty+'px'; sz.appendChild(bat);
 
         if(p) {
+            lastProcessedIdx = pIdx;
             const px = ((p.x + 0.75) / 1.5) * 140;
             const py = ((1.0 - p.y) / 2.0) * 190;
-            const ball = document.createElement('div'); ball.className = 'ball-spot';
-            ball.style.left = px+'px'; ball.style.top = py+'px'; zone.appendChild(ball);
+            const ball = document.createElement('div'); ball.className = 'ball';
+            ball.style.left = px+'px'; ball.style.top = py+'px'; sz.appendChild(ball);
 
-            const dx = tx - px; // Horizontal offset (Pool physics direction)
-            const dy = ty - py; // Vertical offset (Height physics)
-            const dist = Math.sqrt(dx*dx + dy*dy);
+            const dx = tx - px; 
+            const dy = ty - py;
+            const d = Math.sqrt(dx*dx + dy*dy);
 
-            if(dist < 32) { // CIRCLE CONTACT RADIUS
-                // 1. Direction (Angle)
-                const angle = dx * 1.8; 
-                // 2. Power (Velocity)
-                const velo = Math.floor(112 - (dist * 1.5));
-                // 3. Distance/Height
-                const hitDist = Math.floor((velo * 3.5) - (Math.abs(dy) * 2));
+            fb.style.opacity = 1;
+            if(d < 30) {
+                const velo = Math.floor(118 - (d * 1.8));
+                const dist = Math.floor(velo * 3.6);
+                const timing = Math.abs(now - p.t) < 0.15 ? "PERFECT" : "GOOD";
+                
+                document.getElementById('timing-txt').innerText = timing;
+                document.getElementById('contact-txt').innerText = "SQUARED UP";
+                document.getElementById('velo-txt').innerText = velo + " MPH / " + dist + " FT";
+                
+                pLine.style.opacity = 1;
+                pLine.style.height = (dist/4) + 'px';
+                pLine.style.transform = `translateX(-50%) rotate(${dx*2}deg)`;
 
-                applyStatcast(velo, angle, hitDist);
+                if(velo > 98) state.runs++;
                 state.s = 0; state.b = 0;
             } else {
+                document.getElementById('timing-txt').innerText = "TOO LATE";
+                document.getElementById('contact-txt').innerText = "WHIFF";
+                document.getElementById('velo-txt').innerText = "0 MPH";
                 state.s++;
-                hidePhysics();
             }
         } else {
             state.s++;
-            hidePhysics();
+            fb.style.opacity = 0;
         }
-
-        if(state.s >= 3) state.s = 0;
-        updateHUD();
+        updateUI();
     }
 
-    function applyStatcast(velo, angle, dist) {
-        fb.style.opacity = 1;
-        document.getElementById('res-velo').innerText = velo + " MPH";
-        document.getElementById('res-dist').innerText = dist + " FT";
-        
-        estLine.style.opacity = 1;
-        estLine.style.height = (dist / 2.5) + 'px';
-        estLine.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-    }
-
-    function hidePhysics() {
-        fb.style.opacity = 0;
-        estLine.style.opacity = 0;
-    }
-
-    // Game Loop: Reset and Auto-Umpire
+    // High-frequency Loop
     setInterval(() => {
         const now = v.currentTime;
-        const resetPoint = pitches.find(p => p.t > now && p.t - now < 1.0);
         
-        if(resetPoint) {
-            zone.querySelectorAll('.ball-spot, .bat-circle').forEach(m => m.remove());
-            hidePhysics();
-            hasSwung = false;
+        // Reset swing lock between pitches
+        const next = pitches.find(p => p.t > now && p.t - now < 1.0);
+        if(next || now < 0.5) {
+            if(now < 0.2 || (next && next.t - now < 0.3)) {
+                swingLocked = false;
+                pLine.style.opacity = 0;
+                fb.style.opacity = 0;
+                sz.querySelectorAll('.ball, .bat').forEach(e => e.remove());
+            }
         }
 
-        // Auto-Balls/Strikes if no swing
+        // Auto-Umpire
         pitches.forEach((p, i) => {
-            if(now > p.t + 0.7 && !hasSwung) {
-                // Logic check: was it in the zone?
-                if(Math.abs(p.x) <= 0.75 && Math.abs(p.y) <= 1.0) state.s++;
-                else state.b++;
-                hasSwung = true; // prevent double counting
-                updateHUD();
+            if(now > p.t + 0.8 && lastProcessedIdx < i) {
+                if(!swingLocked) {
+                    if(Math.abs(p.x) <= 0.75 && Math.abs(p.y) <= 1.0) state.s++;
+                    else state.b++;
+                    updateUI();
+                }
+                lastProcessedIdx = i;
             }
         });
-    }, 100);
 
-    updateHUD();
+        // Loop Reset
+        if(now < 0.5 && lastProcessedIdx > 0) {
+            lastProcessedIdx = -1;
+            state.s = 0; state.b = 0;
+            updateUI();
+        }
+    }, 50);
+
+    updateUI();
 </script>
 </body>
 </html>
