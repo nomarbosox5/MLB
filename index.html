@@ -3,185 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast Persistant Build</title>
+    <title>Strict Scale Build</title>
     <style>
-        :root { --gold: #efb21e; --red: #ff4444; --green: #44ff44; }
+        :root { --gold: #efb21e; }
         * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { margin: 0; background: #000; color: #fff; font-family: 'condensed', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
         #v-area { width: 100%; height: 42vh; background: #000; border-bottom: 2px solid #333; }
         video { width: 100%; height: 100%; object-fit: cover; }
 
         #tray { flex-grow: 1; display: flex; background: #111; }
 
-        /* LEFT PANEL: SITUATION & SPRAY */
-        #left-panel { width: 45%; display: flex; flex-direction: column; padding: 10px; border-right: 1px solid #333; }
+        #left-panel { width: 45%; display: flex; flex-direction: column; padding: 12px; border-right: 1px solid #333; }
+        .stat-box { background: #000; padding: 8px; border: 1px solid #444; margin-bottom: 10px; }
+        .stat-row { display: flex; justify-content: space-between; font-weight: 900; font-size: 1.2rem; }
         
-        .scoreboard { background: #000; padding: 6px; border: 1px solid #444; margin-bottom: 8px; border-radius: 4px; }
-        .score-row { display: flex; justify-content: space-between; font-weight: 900; font-size: 1.1rem; }
-        .count-row { color: #888; font-size: 0.75rem; margin-top: 4px; }
-
-        #spray-field { 
-            width: 100%; height: 80px; border: 1px solid #333; margin-bottom: 10px; 
-            background: rgba(255,255,255,0.02); position: relative;
-            clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
-        }
+        #spray-chart { width: 100%; height: 80px; border: 1px solid #222; margin-bottom: 10px; background: rgba(255,255,255,0.02); position: relative; clip-path: polygon(50% 100%, 0% 0%, 100% 0%); }
         .hit-dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; transform: translate(-50%, -50%); }
 
-        #feedback { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around; }
-        .item { line-height: 1.1; }
-        .item span { display: block; font-size: 0.6rem; color: #666; text-transform: uppercase; }
-        .item b { font-size: 1rem; color: #fff; }
-
-        /* RIGHT PANEL: NESTICO */
         #right-panel { width: 55%; display: flex; align-items: center; justify-content: center; position: relative; }
-        #nestico-grid { position: relative; width: 190px; height: 230px; border: 1px dashed #444; }
-        #strike-box {
+        
+        /* THE STRICT SCALE BOX (200x240) */
+        #nestico-container { 
+            position: relative; 
+            width: 200px; 
+            height: 240px; 
+            border: 1px dashed #444; 
+            background: #050505;
+        }
+
+        #strike-zone {
             position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
-            border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.02);
+            border: 2px solid rgba(255,255,255,0.6);
             display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;
+            pointer-events: none;
         }
         .cell { border: 0.5px solid rgba(255,255,255,0.1); }
-        .dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #ball { width: 22px; height: 22px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; }
-        #bat { width: 34px; height: 34px; border: 3px solid var(--gold); background: rgba(239, 178, 30, 0.2); display: none; }
-        #touch-gate { position: absolute; inset: 0; z-index: 100; }
+
+        #start-overlay {
+            position: absolute; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+            text-align: center; font-weight: 900; color: var(--gold); font-size: 1.1rem;
+            cursor: pointer; text-transform: uppercase;
+        }
+
+        .ball-dot { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #ball { width: 22px; height: 22px; background: #fff; box-shadow: 0 0 15px #fff; opacity: 0; z-index: 50; }
+        #bat { width: 34px; height: 34px; border: 3px solid var(--gold); background: rgba(239, 178, 30, 0.3); display: none; z-index: 60; }
+        
+        #touch-surface { position: absolute; inset: 0; z-index: 100; }
     </style>
 </head>
 <body>
 
-<div id="v-area" onclick="document.getElementById('v').play()">
-    <video id="v" autoplay muted loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
+<div id="v-area">
+    <video id="v" loop playsinline><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
 
 <div id="tray">
     <div id="left-panel">
-        <div class="scoreboard">
-            <div class="score-row"><span>RUNS</span><span id="runs-val">0</span></div>
-            <div class="count-row"><span id="b-count">0</span>-<span id="s-count">0</span> | <span id="o-count">0</span> OUTS</div>
+        <div class="stat-box">
+            <div class="stat-row"><span>RUNS</span><span id="r-val">0</span></div>
+            <div style="font-size:0.7rem; color:#888; margin-top:4px;">OUTS: <span id="o-val">0</span> | STRK: <span id="s-val">0</span></div>
         </div>
-
-        <div id="spray-field" id="spray-container"></div>
-
-        <div id="feedback">
-            <div class="item"><span>Timing</span><b id="time-f">READY</b></div>
-            <div class="item"><span>Contact</span><b id="cont-f">—</b></div>
-            <div class="item"><span>Result</span><b id="res-f" style="color:var(--gold)">WAITING</b></div>
+        <div id="spray-chart"></div>
+        <div style="font-size:0.8rem;">
+            TIMING: <b id="time-f" style="color:var(--gold)">READY</b><br>
+            RESULT: <b id="res-f">---</b>
         </div>
     </div>
 
     <div id="right-panel">
-        <div id="nestico-grid">
-            <div id="strike-box"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
-            <div id="touch-gate"></div>
-            <div id="ball" class="dot"></div>
-            <div id="bat" class="dot"></div>
+        <div id="nestico-container">
+            <div id="start-overlay">Tap To Swing<br>& Start</div>
+            <div id="strike-zone">
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            </div>
+            <div id="touch-surface"></div>
+            <div id="ball" class="ball-dot"></div>
+            <div id="bat" class="ball-dot"></div>
         </div>
     </div>
 </div>
 
 <script>
     const v = document.getElementById('v');
+    const surface = document.getElementById('touch-surface');
+    const startOverlay = document.getElementById('start-overlay');
+
+    // USING YOUR SCALE EXACTLY
     const PITCHES = [
-        {t: 0.92, x: 50, y: 70}, {t: 6.40, x: 95, y: 60},
-        {t: 10.86,x: 95, y: 115}, {t: 16.08,x: 140,y: 115},
-        {t: 21.50,x: 170,y: 100}, {t: 28.03,x: 25, y: 200},
-        {t: 36.17,x: 50, y: 115}, {t: 41.84,x: 20, y: 165}
+        {t: 0.92, x: 50,  y: 40},  {t: 6.40, x: 85,  y: 30},
+        {t: 10.86,x: 100, y: 75},  {t: 16.08,x: 135, y: 95},
+        {t: 21.50,x: 150, y: 75},  {t: 28.03,x: 35,  y: 170},
+        {t: 36.17,x: 50,  y: 65},  {t: 41.84,x: 40,  y: 130}
     ];
 
-    let g = { runs: 0, strikes: 0, balls: 0, outs: 0, lastT: 0, idx: -1, active: false };
+    let state = { r: 0, s: 0, o: 0, last: 0, idx: -1, active: false };
+
+    startOverlay.onclick = () => {
+        startOverlay.style.display = 'none';
+        v.play();
+    };
 
     v.addEventListener('timeupdate', () => {
         const now = v.currentTime;
-        // LOOP RESET
-        if (now < g.lastT) { 
-            g.idx = -1; g.active = false; 
-            document.getElementById('spray-field').innerHTML = ''; 
-            resetBoard(); 
+        if (now < state.last) { 
+            state.idx = -1; state.active = false;
+            document.getElementById('spray-chart').innerHTML = '';
+            resetStats();
         }
-        g.lastT = now;
+        state.last = now;
 
         let cur = -1;
-        PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.5) cur = i; });
-        if (cur !== g.idx) {
-            g.idx = cur; g.active = true;
+        PITCHES.forEach((p, i) => { if (now >= p.t && now < p.t + 0.45) cur = i; });
+
+        if (cur !== state.idx) {
+            state.idx = cur; state.active = true;
             document.getElementById('bat').style.display = 'none';
             const b = document.getElementById('ball');
-            if (cur !== -1) { b.style.left = PITCHES[cur].x+'px'; b.style.top = PITCHES[cur].y+'px'; b.style.opacity = '1'; }
-            else { b.style.opacity = '0'; }
+            if (cur !== -1) {
+                b.style.left = PITCHES[cur].x + 'px';
+                b.style.top = PITCHES[cur].y + 'px';
+                b.style.opacity = '1';
+            } else { b.style.opacity = '0'; }
         }
     });
 
-    document.getElementById('touch-gate').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (g.idx === -1 || !g.active) return;
-        g.active = false;
+    surface.onpointerdown = (e) => {
+        surface.setPointerCapture(e.pointerId);
+        if (state.idx === -1 || !state.active) return;
+        state.active = false;
 
-        const rect = document.getElementById('nestico-grid').getBoundingClientRect();
-        const ux = e.touches[0].clientX - rect.left;
-        const uy = e.touches[0].clientY - rect.top;
-        const p = PITCHES[g.idx];
+        const rect = document.getElementById('nestico-container').getBoundingClientRect();
+        const ux = e.clientX - rect.left;
+        const uy = e.clientY - rect.top;
+        const p = PITCHES[state.idx];
         
-        document.getElementById('bat').style.left = ux+'px'; 
-        document.getElementById('bat').style.top = uy+'px'; 
-        document.getElementById('bat').style.display = 'block';
+        const batUI = document.getElementById('bat');
+        batUI.style.left = ux + 'px'; batUI.style.top = uy + 'px'; batUI.style.display = 'block';
 
         const err = Math.sqrt(Math.pow(ux - p.x, 2) + Math.pow(uy - p.y, 2));
         const dt = v.currentTime - p.t;
 
-        // TIMING FEEDBACK
-        const tEl = document.getElementById('time-f');
-        if (dt < 0.12) tEl.innerText = "AHEAD (PULL)";
-        else if (dt > 0.38) tEl.innerText = "LATE (OPPO)";
-        else tEl.innerText = "ON TIME";
+        document.getElementById('time-f').innerText = dt < 0.15 ? "AHEAD" : (dt > 0.35 ? "LATE" : "ON TIME");
 
-        // RESULT LOGIC
-        const resEl = document.getElementById('res-f');
-        const contEl = document.getElementById('cont-f');
-        let dotColor = "var(--red)";
-
-        if (err < 42) {
+        const res = document.getElementById('res-f');
+        if (err < 40) {
             const dy = p.y - uy;
-            contEl.innerText = dy > 6 ? "BOTTOM (LIFT)" : (dy < -6 ? "TOP (CHOP)" : "CENTER");
-            
             if (err < 15 && dy > 2) {
-                g.runs++; document.getElementById('runs-val').innerText = g.runs;
-                resEl.innerText = "HOME RUN"; resEl.style.color = "var(--gold)";
-                dotColor = "var(--gold)";
-            } else if (err < 30 && dy > -8 && dy < 15) {
-                resEl.innerText = "BASE HIT"; resEl.style.color = "var(--green)";
-                dotColor = "var(--green)";
+                state.r++; document.getElementById('r-val').innerText = state.r;
+                res.innerText = "HOME RUN"; res.style.color = "var(--gold)";
+                addSpray("var(--gold)", dt);
+            } else if (err < 30) {
+                res.innerText = "BASE HIT"; res.style.color = "#44ff44";
+                addSpray("#44ff44", dt);
             } else {
-                g.outs++; document.getElementById('o-count').innerText = g.outs;
-                resEl.innerText = "FIELDED OUT"; resEl.style.color = "var(--red)";
-                dotColor = "var(--red)";
+                state.o++; document.getElementById('o-val').innerText = state.o;
+                res.innerText = "FIELDED OUT"; res.style.color = "#ff4444";
+                addSpray("#ff4444", dt);
             }
-            addSpray(dotColor, dt);
         } else {
-            g.strikes++; document.getElementById('s-count').innerText = g.strikes;
-            resEl.innerText = "STRIKE / WHIFF"; resEl.style.color = "#888";
+            state.s++; document.getElementById('s-val').innerText = state.s;
+            res.innerText = "MISS / STRIKE"; res.style.color = "#888";
         }
-    });
+    };
 
     function addSpray(color, dt) {
         const dot = document.createElement('div');
         dot.className = 'hit-dot';
         dot.style.background = color;
-        // Map timing (dt) to pull/oppo horizontal
-        let xPos = 50 + ((dt - 0.25) * 200); 
-        dot.style.left = Math.max(10, Math.min(90, xPos)) + "%";
-        dot.style.top = (Math.random() * 40 + 10) + "%";
-        document.getElementById('spray-field').appendChild(dot);
+        dot.style.left = (50 + (dt - 0.25) * 180) + "%";
+        dot.style.top = (Math.random() * 40 + 5) + "%";
+        document.getElementById('spray-chart').appendChild(dot);
     }
 
-    function resetBoard() {
+    function resetStats() {
+        state.s = 0; state.o = 0;
+        document.getElementById('s-val').innerText = "0";
+        document.getElementById('o-val').innerText = "0";
+        document.getElementById('res-f').innerText = "---";
         document.getElementById('time-f').innerText = "READY";
-        document.getElementById('res-f').innerText = "WAITING";
-        document.getElementById('res-f').style.color = "var(--gold)";
-        document.getElementById('cont-f').innerText = "—";
-        g.strikes = 0; g.balls = 0; g.outs = 0;
-        document.getElementById('s-count').innerText = "0";
-        document.getElementById('o-count').innerText = "0";
     }
 </script>
 </body>
