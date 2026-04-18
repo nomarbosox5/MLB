@@ -3,44 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statcast: Nestico Build</title>
+    <title>Statcast Pro | Analytics</title>
     <style>
-        :root { --gold: #efb21e; --grass: #1e3d1a; }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Inter:wght@400;900&display=swap');
+        :root { --gold: #fcc419; --bg: #050505; --accent: #228be6; }
         * { touch-action: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        #v-area { width: 100%; height: 42vh; background: #000; position: relative; border-bottom: 2px solid #333; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* VIDEO AREA */
+        #v-area { width: 100%; height: 45vh; position: relative; border-bottom: 1px solid #333; }
         video { width: 100%; height: 100%; object-fit: cover; }
-        #tray { flex-grow: 1; display: flex; background: #0a0a0a; }
-        #left-panel { width: 42%; display: flex; flex-direction: column; padding: 10px; border-right: 1px solid #222; justify-content: space-between; }
-        .data-card { background: #111; padding: 8px; border-radius: 4px; border-left: 3px solid var(--gold); margin-bottom: 5px; }
-        .data-label { font-size: 0.6rem; color: #888; text-transform: uppercase; }
-        .data-value { font-size: 1rem; font-weight: 900; }
-        #field { width: 100%; height: 85px; background: var(--grass); position: relative; clip-path: polygon(50% 100%, 0% 0%, 100% 0%); border: 1px solid #333; }
-        .hit-dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid #000; }
-        #right-panel { width: 58%; display: flex; align-items: center; justify-content: center; }
-        #grid { position: relative; width: 200px; height: 240px; background: #050505; border: 1px solid #333; }
-        #strike-box { position: absolute; left: 25%; top: 16.6%; width: 50%; height: 66.6%; border: 2px solid rgba(255,255,255,0.3); pointer-events: none; }
-        .overlay { position: absolute; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gold); font-weight: 900; }
-        .btn { padding: 12px 24px; background: var(--gold); color: #000; border: none; border-radius: 4px; font-weight: 900; cursor: pointer; margin-top: 10px; }
+
+        /* GLASS OVERLAYS */
+        .overlay { 
+            position: absolute; inset: 0; z-index: 100; 
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* DATA PANEL */
+        #dashboard { flex-grow: 1; display: grid; grid-template-columns: 1fr 1.2fr; background: #111; gap: 1px; }
+        .panel { background: var(--bg); padding: 20px; display: flex; flex-direction: column; justify-content: center; }
+        .stat-group { margin-bottom: 15px; }
+        .label { font-size: 10px; color: #555; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase; }
+        .value { font-family: 'JetBrains Mono', monospace; font-size: 32px; color: #fff; }
+        .unit { font-size: 12px; color: #333; margin-left: 5px; }
+
+        /* NESTICO GRID */
+        #grid { 
+            width: 190px; height: 230px; background: #080808; 
+            border: 1px solid #222; position: relative; border-radius: 4px;
+        }
+        #strike-box { 
+            position: absolute; left: 25%; top: 16%; width: 50%; height: 68%; 
+            border: 1px solid rgba(255,255,255,0.15);
+            background: linear-gradient(to bottom right, rgba(255,255,255,0.05), transparent);
+        }
+
+        /* MARKERS */
         .marker { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; }
-        #ball-dot { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 10px #fff; z-index: 50; }
-        #bat-ring { width: 30px; height: 30px; border: 2px solid var(--gold); background: rgba(239,178,30,0.2); z-index: 60; }
+        #ball { width: 16px; height: 16px; background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.4); z-index: 10; }
+        #bat { width: 36px; height: 36px; border: 2px solid var(--gold); background: rgba(252, 196, 25, 0.15); z-index: 11; }
+
+        .btn { background: #fff; color: #000; padding: 14px 40px; border-radius: 100px; font-weight: 900; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
+
 <div id="v-area">
-    <div id="start-overlay" class="overlay"><button class="btn" onclick="startVideo()">Start Session</button></div>
-    <div id="replay-overlay" class="overlay" style="display:none;"><div>SESSION COMPLETE</div><button class="btn" onclick="restartSession()">Replay</button></div>
+    <div id="ui-start" class="overlay"><button class="btn" onclick="run()">START ANALYTICS</button></div>
+    <div id="ui-end" class="overlay" style="display:none;"><button class="btn" onclick="run()">REPLAY SESSION</button></div>
     <video id="v" playsinline muted><source src="ScreenRecording_04-17-2026 18-27-36_1.mp4" type="video/mp4"></video>
 </div>
-<div id="tray">
-    <div id="left-panel">
-        <div><div class="data-card"><div class="data-label">EV (MPH)</div><div id="ev-val" class="data-value">-</div></div><div class="data-card"><div class="data-label">Launch Angle</div><div id="la-val" class="data-value">-</div></div></div>
-        <div id="field"></div>
-        <div style="font-size: 0.7rem; color: #666; padding-top: 5px;">TIMING: <b id="time-f" style="color:#fff">-</b><br>RUNS: <b id="r-val" style="color:var(--gold)">0</b> | OUTS: <b id="o-val">0</b></div>
+
+<div id="dashboard">
+    <div class="panel">
+        <div class="stat-group"><div class="label">Exit Velocity</div><div class="value" id="ev">0.0<span class="unit">MPH</span></div></div>
+        <div class="stat-group"><div class="label">Timing</div><div class="value" id="timing" style="font-size: 20px; color: var(--accent);">IDLE</div></div>
     </div>
-    <div id="right-panel"><div id="grid" onpointerdown="handleSwing(event)"><div id="strike-box"></div><div id="ball-dot" class="marker"></div><div id="bat-ring" class="marker"></div></div></div>
+    <div class="panel" style="align-items: center;">
+        <div id="grid" onpointerdown="swing(event)">
+            <div id="strike-box"></div>
+            <div id="ball" class="marker"></div>
+            <div id="bat" class="marker"></div>
+        </div>
+    </div>
 </div>
+
 <script>
     const v = document.getElementById('v');
     const PITCHES = [
@@ -49,45 +78,56 @@
         {t: 21.50,x: 0.20,  y: 2.75}, {t: 28.03,x: -0.90, y: 1.75},
         {t: 36.17,x: -0.75, y: 3.00}, {t: 41.84,x: -0.90, y: 2.25}
     ];
-    let g = { runs: 0, outs: 0, idx: -1, active: false };
-    function getPx(coord, isX) {
-        if (isX) return 100 + (coord * (100 / 1.5)); // Map -1.5 to 1.5
-        return 240 - ((coord - 1.0) * (240 / 3.0)); // Map 1.0 to 4.0 height
+
+    let state = { idx: -1, active: false };
+
+    function run() {
+        document.getElementById('ui-start').style.display = 'none';
+        document.getElementById('ui-end').style.display = 'none';
+        v.currentTime = 0;
+        v.play();
     }
-    function startVideo() { document.getElementById('start-overlay').style.display = 'none'; v.play(); }
-    function restartSession() { v.currentTime = 0; g.runs = 0; g.outs = 0; g.idx = -1; g.active = false; document.getElementById('r-val').innerText = "0"; document.getElementById('o-val').innerText = "0"; document.getElementById('field').innerHTML = ''; document.getElementById('replay-overlay').style.display = 'none'; v.play(); }
-    v.addEventListener('timeupdate', () => {
-        const now = v.currentTime;
-        if (v.duration && now >= v.duration - 0.2) { v.pause(); document.getElementById('replay-overlay').style.display = 'flex'; }
-        let cur = -1;
-        PITCHES.forEach((p, i) => { if (now >= p.t - 0.05 && now < p.t + 0.45) cur = i; });
-        if (cur !== -1 && cur !== g.idx) {
-            g.idx = cur; g.active = true; document.getElementById('bat-ring').style.opacity = '0';
-            const b = document.getElementById('ball-dot'); b.style.left = getPx(PITCHES[cur].x, true) + 'px'; b.style.top = getPx(PITCHES[cur].y, false) + 'px'; b.style.opacity = '1';
+
+    // Coordinate Conversion
+    const getX = (val) => 95 + (val * 63);
+    const getY = (val) => 230 - ((val - 1.0) * 76);
+
+    v.ontimeupdate = () => {
+        let now = v.currentTime;
+        // Detect end of video
+        if (v.duration && now >= v.duration - 0.2) {
+            document.getElementById('ui-end').style.display = 'flex';
         }
-    });
-    function handleSwing(e) {
-        if (e.cancelable) e.preventDefault();
-        if (g.idx === -1 || !g.active) return;
-        g.active = false;
+
+        let match = PITCHES.findIndex(p => now >= p.t - 0.05 && now < p.t + 0.45);
+        if (match !== -1 && match !== state.idx) {
+            state.idx = match; state.active = true;
+            const b = document.getElementById('ball');
+            b.style.left = getX(PITCHES[match].x) + 'px';
+            b.style.top = getY(PITCHES[match].y) + 'px';
+            b.style.opacity = 1;
+            document.getElementById('bat').style.opacity = 0;
+        }
+    };
+
+    function swing(e) {
+        if (!state.active) return;
+        state.active = false;
+        
         const rect = document.getElementById('grid').getBoundingClientRect();
-        const ux = e.clientX - rect.left; const uy = e.clientY - rect.top; const p = PITCHES[g.idx];
-        const bat = document.getElementById('bat-ring'); bat.style.left = ux + 'px'; bat.style.top = uy + 'px'; bat.style.opacity = '1';
-        const dt = v.currentTime - p.t; const err = Math.sqrt(Math.pow(ux - getPx(p.x, true), 2) + Math.pow(uy - getPx(p.y, false), 2));
-        let ev = Math.max(0, 116 - (err * 1.4) - (Math.abs(dt) * 75));
-        let la = Math.round((getPx(p.y, false) - uy) * 2.3);
-        document.getElementById('ev-val').innerText = ev.toFixed(1); document.getElementById('la-val').innerText = la + "°";
-        if (err < 42) {
-            if (la > 8 && la < 35 && ev > 95) { g.runs++; document.getElementById('r-val').innerText = g.runs; addSpray("#efb21e", dt, true); }
-            else if (ev > 55) { addSpray("#44ff44", dt, false); }
-            else { g.outs++; document.getElementById('o-val').innerText = g.outs; addSpray("#ff4444", dt, false); }
-        }
-        document.getElementById('time-f').innerText = dt < -0.05 ? "AHEAD" : (dt > 0.18 ? "LATE" : "ON TIME");
-    }
-    function addSpray(color, dt, isHR) {
-        const dot = document.createElement('div'); dot.className = 'hit-dot'; dot.style.background = color;
-        dot.style.left = Math.max(10, Math.min(90, 50 + (dt * 135))) + "%";
-        dot.style.top = isHR ? "10%" : (Math.random() * 40 + 35) + "%"; document.getElementById('field').appendChild(dot);
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const p = PITCHES[state.idx];
+
+        const bat = document.getElementById('bat');
+        bat.style.left = sx + 'px'; bat.style.top = sy + 'px'; bat.style.opacity = 1;
+
+        const dt = v.currentTime - p.t;
+        const dist = Math.sqrt(Math.pow(sx - getX(p.x), 2) + Math.pow(sy - getY(p.y), 2));
+        
+        document.getElementById('ev').innerHTML = Math.max(0, 114 - (dist * 1.3)).toFixed(1) + `<span class="unit">MPH</span>`;
+        document.getElementById('timing').innerText = dt < -0.05 ? "EARLY" : (dt > 0.15 ? "LATE" : "PERFECT");
+        document.getElementById('timing').style.color = Math.abs(dt) < 0.1 ? "var(--gold)" : "var(--accent)";
     }
 </script>
 </body>
